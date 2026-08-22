@@ -1,0 +1,96 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '560px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    @if (!isEdit()) {
+      <div class="form__field">
+        <label class="form__label" for="action-definition">Eylem</label>
+        <p-select
+          inputId="action-definition"
+          [options]="definitionOptions()"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="actionDefinitionId"
+          placeholder="Havuzdan bir eylem seçin"
+          appendTo="body"
+          class="form__select"
+        />
+        <p class="form__help">
+          Ortak eylem sözlüğünden seçilir. Aynı eylem bir işleme yalnızca bir kez bağlanır;
+          ikinci bir <code>Ekle</code> gerekiyorsa ayrı bir işlem açılır.
+        </p>
+
+        @if (form.controls.actionDefinitionId.touched && form.controls.actionDefinitionId.invalid) {
+          <p class="form__error">Bir eylem seçilmelidir.</p>
+        }
+      </div>
+    }
+
+    <div class="form__field">
+      <label class="form__label" for="action-endpoint">
+        Uç nokta
+        <span class="form__hint">boş bırakılabilir</span>
+      </label>
+
+      <p-select
+        inputId="action-endpoint"
+        [options]="endpointOptions()"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="endpointKey"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Uygulamanın uç noktalarından seçin"
+        [showClear]="true"
+        appendTo="body"
+        class="form__select"
+      >
+        <ng-template #item let-option>
+          <span class="epick">
+            <span class="method method--{{ option.method.toLowerCase() }}">{{ option.method }}</span>
+            <code class="epick__route">{{ option.route }}</code>
+            <span class="epick__hint">{{ option.hint }}</span>
+          </span>
+        </ng-template>
+      </p-select>
+
+      <p class="form__help">
+        Liste uygulamanın controller rotalarından okunur; adres elle yazılmaz. Boş
+        bırakılırsa bu eylem sunucu tarafındaki adres eşleştirmesine <strong>girmez</strong> —
+        <code>VIEW</code> gibi salt görünürlük yetkileri böyledir ve ekranda
+        <code>UNAVAILABLE</code> görünür.
+      </p>
+    </div>
+
+    @if (isEdit()) {
+      <div class="form__switch">
+        <p-toggleswitch formControlName="isActive" inputId="action-active" />
+        <label for="action-active">
+          <span class="form__switch-title">Aktif</span>
+          <span class="form__switch-help">
+            Pasif eylem menüde dönmez; verilmiş rol yetkileri silinmez.
+          </span>
+        </label>
+      </div>
+    }
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Bağla' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

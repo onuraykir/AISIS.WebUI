@@ -1,0 +1,131 @@
+:host {
+  display: block;
+}
+
+.subbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--app-subbar-height);
+  padding-inline: 20px;
+  background: var(--app-subbar-bg);
+  border-bottom: 1px solid var(--p-content-border-color);
+  /* İçeriğin şeridin altına doğru kaydığını hissettiren ince gölge.
+     Şerit grid'de içerikten önce ve daha yüksek z-index'te (bkz. shell.scss). */
+  box-shadow: 0 3px 6px -3px rgb(15 23 42 / 18%);
+  font-size: 12.5px;
+}
+
+/* --- Konum + başlık --- */
+.crumbs {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.crumbs__link,
+.crumbs__text {
+  color: var(--p-text-muted-color);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.crumbs__link:hover {
+  color: var(--p-primary-color);
+  text-decoration: underline;
+}
+
+.crumbs__home {
+  align-self: center;
+  display: inline-flex;
+  font-size: 13px;
+}
+
+.crumbs__sep {
+  align-self: center;
+  font-size: 10px;
+  color: var(--p-text-muted-color);
+  opacity: 0.55;
+}
+
+/* Zincirin son halkası sayfa başlığıdır. */
+.crumbs__current {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--p-text-color);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+/* --- Sayfayı favorile --- */
+.subbar__star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--p-text-muted-color);
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s, background-color 0.15s, color 0.15s;
+}
+
+.subbar__star:hover {
+  opacity: 1;
+  background: var(--p-content-hover-background);
+}
+
+.subbar__star--on {
+  opacity: 1;
+  color: #d4a600;
+}
+
+/* --- Sağdaki çalışma bağlamı --- */
+.subbar__context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+  padding-inline-start: 12px;
+  white-space: nowrap;
+}
+
+.subbar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 999px;
+  color: var(--p-text-muted-color);
+  font-size: 11.5px;
+  cursor: default;
+}
+
+.subbar__chip i {
+  font-size: 11px;
+  color: var(--p-primary-color);
+}
+
+@media (max-width: 1100px) {
+  .subbar__chip--unit {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .subbar__context {
+    display: none;
+  }
+}

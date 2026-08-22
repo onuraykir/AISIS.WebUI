@@ -1,0 +1,40 @@
+<div class="subbar">
+  <!-- Konum + sayfa başlığı: zincirin son halkası başlık gibi vurgulanır. -->
+  <nav class="crumbs" aria-label="Bulunduğunuz konum">
+    @if (showHome()) {
+      <a class="crumbs__link crumbs__home" routerLink="/ana-sayfa" aria-label="Ana sayfa">
+        <i class="pi pi-home" aria-hidden="true"></i>
+      </a>
+    }
+
+    @for (item of trail(); track item.id) {
+      @if (showHome() || !$first) {
+        <i class="crumbs__sep pi pi-angle-right" aria-hidden="true"></i>
+      }
+
+      @if (item.route && !$last) {
+        <a class="crumbs__link" [routerLink]="item.route">{{ item.label }}</a>
+      } @else if (!$last) {
+        <span class="crumbs__text">{{ item.label }}</span>
+      } @else {
+        <h1 class="crumbs__current" aria-current="page">{{ item.label }}</h1>
+      }
+    }
+  </nav>
+
+  @if (canFavorite()) {
+    <button
+      type="button"
+      class="subbar__star"
+      [class.subbar__star--on]="isFavorite()"
+      [pTooltip]="isFavorite() ? 'Favorilerden çıkar' : 'Favorilere ekle'"
+      tooltipPosition="bottom"
+      [attr.aria-pressed]="isFavorite()"
+      aria-label="Favorilere ekle"
+      (click)="toggleFavorite()"
+    >
+      <i class="pi" [class.pi-star-fill]="isFavorite()" [class.pi-star]="!isFavorite()" aria-hidden="true"></i>
+    </button>
+  }
+
+</div>

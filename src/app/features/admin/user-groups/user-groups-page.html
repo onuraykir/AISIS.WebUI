@@ -1,0 +1,292 @@
+<app-admin-toolbar
+  title="Kullanıcı Grupları"
+  description="Grup yetkinin iki eksenini birleştirir: NE (ana modüller) ve NEREDE (birimler). Roller izni verir, kapsam onu sınırlar; üyelik ikisinin kesişiminde durur."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button type="button" class="btn btn--primary" *appHasAction="'CREATE'; operation: 'GROUP'" (click)="openCreate()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Grup
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.groups().length }}</span>
+      <span class="stats__label">grup</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.memberTotal() }}</span>
+      <span class="stats__label">üyelik</span>
+    </div>
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Kullanıcı grupları yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board board--groups">
+    <!-- ── Gruplar ── -->
+    <section class="app-card groups" aria-label="Kullanıcı grupları">
+      <h3 class="pane__title"><i class="pi pi-users" aria-hidden="true"></i> Gruplar</h3>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4]; track row) {
+            <p-skeleton height="52px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (group of store.groups(); track group.id) {
+            <li>
+              <div class="row" [class.row--selected]="store.selectedGroupId() === group.id">
+                <button type="button" class="row__main" (click)="selectGroup(group)">
+                  <i class="row__icon pi pi-users" aria-hidden="true"></i>
+                  <span class="row__text">
+                    <span class="row__name">{{ group.name }}</span>
+                    <span class="row__sub">
+                      {{ group.moduleCount }} modül · {{ group.departmentCount }} birim ·
+                      {{ group.roleCount }} rol · {{ group.memberCount }} üye
+                    </span>
+                  </span>
+                </button>
+
+                <div class="row__actions">
+                  <button
+                    type="button"
+                    class="row__action"
+                    pTooltip="Yeniden adlandır"
+                    tooltipPosition="top"
+                    aria-label="Yeniden adlandır"
+                    [disabled]="store.saving()"
+                    (click)="openEdit(group)"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    [pTooltip]="deleteBlockedReason(group) ?? 'Sil'"
+                    tooltipPosition="top"
+                    aria-label="Sil"
+                    [disabled]="store.saving() || !!deleteBlockedReason(group)"
+                    (click)="confirmDelete(group)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-users state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">Grup yok</h3>
+              <p class="state__text">Kullanıcıları yetkilendirmek için önce bir grup oluşturun.</p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Seçili grup ── -->
+    <section class="app-card detail" aria-label="Grup ayrıntısı">
+      @if (store.detail(); as detail) {
+        <header class="detail__head">
+          <span class="detail__icon"><i class="pi pi-users" aria-hidden="true"></i></span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ detail.name }}</h3>
+            <span class="detail__sub">{{ detail.memberCount }} üyelik</span>
+          </div>
+        </header>
+
+        @if (store.detailLoading()) {
+          <div class="skeletons">
+            @for (row of [1, 2, 3]; track row) {
+              <p-skeleton height="92px" />
+            }
+          </div>
+        } @else {
+          <div class="scopes">
+            <app-scope-picker
+              title="Kapsam — NE"
+              hint="Grubun çalıştığı ana modüller. Rol izin verse bile buraya bağlı olmayan modüldeki sayfa görünmez."
+              icon="pi pi-sitemap"
+              [options]="moduleOptions()"
+              [selected]="store.moduleDraft()"
+              [dirty]="store.moduleDirty()"
+              [saving]="store.saving()"
+              (selectionChange)="onScopeChange('modules', $event)"
+              (save)="saveScope('modules')"
+              (revert)="revertScope('modules')"
+            />
+
+            <app-scope-picker
+              title="Kapsam — NEREDE"
+              hint="Grubun yetkili olduğu birimler. Üyelikler yalnızca bu birimlerde açılabilir."
+              icon="pi pi-building"
+              [options]="departmentOptions()"
+              [selected]="store.departmentDraft()"
+              [dirty]="store.departmentDirty()"
+              [saving]="store.saving()"
+              [blockedIds]="departmentBlockedIds()"
+              blockedReason="Bu birimde üye var; kapsamdan çıkarılamaz. Önce üyelikleri taşıyın."
+              (selectionChange)="onScopeChange('departments', $event)"
+              (save)="saveScope('departments')"
+              (revert)="revertScope('departments')"
+            />
+
+            <app-scope-picker
+              title="Roller"
+              hint="Grubun üyelerine verilen roller. İzinler rollerden, sınır kapsamdan gelir."
+              icon="pi pi-shield"
+              [options]="roleOptions()"
+              [selected]="store.roleDraft()"
+              [dirty]="store.roleDirty()"
+              [saving]="store.saving()"
+              (selectionChange)="onScopeChange('roles', $event)"
+              (save)="saveScope('roles')"
+              (revert)="revertScope('roles')"
+            />
+          </div>
+
+          @if (store.departmentRemovalBlocked().length > 0) {
+            <p class="detail__note detail__note--warn">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              Üyesi bulunan birimler kapsamdan çıkarılamaz:
+              <strong>{{ store.departmentRemovalBlocked().join(', ') }}</strong>
+            </p>
+          }
+
+          <!-- Üyeler -->
+          <section class="members">
+            <h4 class="pane__title members__title">
+              <i class="pi pi-user" aria-hidden="true"></i> Üyeler
+              <span class="members__count">{{ store.members().length }}</span>
+            </h4>
+
+            <div class="members__add" *appHasAction="'CREATE'; operation: 'MEMBERSHIP'">
+              <p-select
+                [options]="userOptions()"
+                optionLabel="name"
+                optionValue="id"
+                [ngModel]="newMemberUserId()"
+                (ngModelChange)="newMemberUserId.set($event)"
+                [filter]="true"
+                filterBy="name"
+                placeholder="Kullanıcı"
+                [showClear]="true"
+                [disabled]="store.saving()"
+                appendTo="body"
+                class="members__select"
+              />
+
+              <p-select
+                [options]="memberDepartmentOptions()"
+                optionLabel="name"
+                optionValue="id"
+                [ngModel]="newMemberDepartmentId()"
+                (ngModelChange)="newMemberDepartmentId.set($event)"
+                placeholder="Birim"
+                [showClear]="true"
+                [disabled]="store.saving() || memberDepartmentOptions().length === 0"
+                appendTo="body"
+                class="members__select"
+              />
+
+              <button
+                type="button"
+                class="btn btn--primary"
+                [disabled]="store.saving() || !canAddMember()"
+                (click)="addMember()"
+              >
+                <i class="pi pi-plus" aria-hidden="true"></i> Ekle
+              </button>
+            </div>
+
+            @if (memberDepartmentOptions().length === 0) {
+              <p class="detail__note detail__note--warn">
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                Üye eklemek için önce grubun birim kapsamına en az bir birim ekleyip kaydedin.
+              </p>
+            }
+
+            <ul class="rows members__list">
+              @for (member of store.members(); track member.userId + '-' + member.departmentId) {
+                <li>
+                  <div class="row">
+                    <span class="row__main row__main--static">
+                      <i class="row__icon pi pi-user" aria-hidden="true"></i>
+                      <span class="row__text">
+                        <span class="row__name">{{ member.userName }}</span>
+                        <span class="row__sub">{{ member.departmentName }} · {{ member.email }}</span>
+                      </span>
+                    </span>
+
+                    <div class="row__actions">
+                      <button
+                        type="button"
+                        class="row__action row__action--danger"
+                        pTooltip="Üyeliği kaldır"
+                        tooltipPosition="top"
+                        aria-label="Üyeliği kaldır"
+                        [disabled]="store.saving()"
+                        (click)="confirmRemoveMember(member)"
+                      >
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              } @empty {
+                <li class="members__empty">
+                  Bu grupta üye yok. Aynı kullanıcı farklı birimler için ayrı ayrı eklenebilir.
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Grup seçilmedi</h3>
+          <p class="state__text">
+            Kapsamını, rollerini ve üyelerini düzenlemek için soldan bir grup seçin.
+          </p>
+        </div>
+      }
+    </section>
+  </div>
+}
+
+<app-name-dialog
+  [(visible)]="dialogOpen"
+  [heading]="groupInDialog() ? 'Grubu Yeniden Adlandır' : 'Yeni Kullanıcı Grubu'"
+  label="Grup adı"
+  placeholder="Akreditasyon Komisyonu"
+  hint="Kapsam ve roller grup oluşturulduktan sonra sağdaki bölümlerden verilir."
+  [value]="groupInDialog()?.name ?? ''"
+  [submitLabel]="groupInDialog() ? 'Kaydet' : 'Oluştur'"
+  [saving]="store.saving()"
+  (save)="onDialogSave($event)"
+/>
+
+<p-confirmdialog />

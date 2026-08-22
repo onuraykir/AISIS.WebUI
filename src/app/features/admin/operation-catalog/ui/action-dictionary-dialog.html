@@ -1,0 +1,105 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  header="Ortak Eylem Sözlüğü"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '560px' }"
+>
+  <p class="dict__intro">
+    Sayfa işlemlerine eylem buradan seçilerek bağlanır. Her sayfa için ayrı bir
+    "Dışa Aktar" tanımı açılmaz; sözlük bir kez yazılır, her yerde aynı kod kullanılır.
+  </p>
+
+  <ul class="rows dict__rows">
+    @for (definition of definitions(); track definition.id) {
+      <li>
+        <div class="row">
+          <span class="row__main row__main--static">
+            <span class="row__text">
+              <span class="row__name">{{ definition.name }}</span>
+              @if (definition.description) {
+                <span class="row__sub">{{ definition.description }}</span>
+              }
+            </span>
+
+            <code class="row__code">{{ definition.code }}</code>
+
+            <span
+              class="row__badge"
+              [class.row__badge--muted]="definition.usageCount === 0"
+              pTooltip="Kaç işlemde kullanılıyor"
+              tooltipPosition="top"
+            >
+              {{ definition.usageCount }}
+            </span>
+          </span>
+
+          <div class="row__actions">
+            <button
+              type="button"
+              class="row__action"
+              pTooltip="Yukarı"
+              tooltipPosition="top"
+              aria-label="Yukarı taşı"
+              [disabled]="saving() || isFirst(definition)"
+              (click)="shift.emit({ definition, direction: -1 })"
+            >
+              <i class="pi pi-arrow-up"></i>
+            </button>
+
+            <button
+              type="button"
+              class="row__action"
+              pTooltip="Aşağı"
+              tooltipPosition="top"
+              aria-label="Aşağı taşı"
+              [disabled]="saving() || isLast(definition)"
+              (click)="shift.emit({ definition, direction: 1 })"
+            >
+              <i class="pi pi-arrow-down"></i>
+            </button>
+
+            <button
+              type="button"
+              class="row__action"
+              pTooltip="Düzenle"
+              tooltipPosition="top"
+              aria-label="Düzenle"
+              [disabled]="saving()"
+              (click)="edit.emit(definition)"
+            >
+              <i class="pi pi-pencil"></i>
+            </button>
+
+            <button
+              type="button"
+              class="row__action row__action--danger"
+              [pTooltip]="deleteBlockedReason(definition) ?? 'Sil'"
+              tooltipPosition="top"
+              aria-label="Sil"
+              [disabled]="saving() || !!deleteBlockedReason(definition)"
+              (click)="remove.emit(definition)"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </li>
+    } @empty {
+      <li class="dict__empty">
+        Sözlük boş. En az bir eylem tanımı olmadan sayfa işlemlerine yetki bağlanamaz.
+      </li>
+    }
+  </ul>
+
+  <footer class="dict__footer">
+    <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="create.emit()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Eylem Tanımı
+    </button>
+    <button type="button" class="btn btn--primary" (click)="close()">Kapat</button>
+  </footer>
+</p-dialog>

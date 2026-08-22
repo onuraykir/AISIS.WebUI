@@ -1,0 +1,195 @@
+<header class="topbar">
+  <!-- Sol: menü aç/kapat + kurum kimliği -->
+  <div class="topbar__left">
+    <button
+      type="button"
+      pRipple
+      class="icon-btn"
+      pTooltip="Menüyü aç / kapat"
+      tooltipPosition="bottom"
+      aria-label="Menüyü aç veya kapat"
+      (click)="toggleSidebar()"
+    >
+      <i class="pi pi-bars" aria-hidden="true"></i>
+    </button>
+
+    <a class="brand" routerLink="/ana-sayfa">
+      <img
+        class="brand__logo"
+        src="images/cankaya-logo.png"
+        alt="Çankaya Üniversitesi"
+        width="34"
+        height="34"
+      />
+      <span class="brand__text">
+        <span class="brand__title">AISIS</span>
+        <span class="brand__subtitle">Çankaya Üniversitesi</span>
+      </span>
+    </a>
+  </div>
+
+  <!-- Sağ: arama, tema, bildirimler, kullanıcı paneli.
+       Arama bilerek ortada değil: solda marka bloğu bütün kalsın diye
+       tüm eylemler tek bir sağ grupta toplanıyor. -->
+  <div class="topbar__right">
+    <div class="topbar__search">
+      <p-iconfield>
+        <p-inputicon class="pi pi-search" />
+        <input
+          #searchInput
+          pInputText
+          type="text"
+          class="topbar__search-input"
+          placeholder="Ara…"
+          aria-label="Uygulamada ara"
+          [value]="query()"
+          (input)="onSearchInput($event)"
+        />
+      </p-iconfield>
+
+      @if (!query()) {
+        <kbd class="topbar__kbd" aria-hidden="true">Ctrl K</kbd>
+      }
+
+      @if (query().length >= 2) {
+        <div class="search-results">
+          <!-- Sonuçlar gruplu: kayıt araması (öğrenci, personel, ders) eklendiğinde
+               aynı panele ikinci bir grup olarak girecek. -->
+          <p class="search-results__group">Menü</p>
+
+          @for (item of results(); track item.id) {
+            <button type="button" class="search-results__item" (click)="goToResult(item)">
+              <i class="pi pi-angle-right" aria-hidden="true"></i>
+              <span>{{ item.label }}</span>
+              <small>{{ item.route }}</small>
+            </button>
+          } @empty {
+            <p class="search-results__empty">Eşleşen kayıt bulunamadı.</p>
+          }
+        </div>
+      }
+    </div>
+
+    <button
+      type="button"
+      pRipple
+      class="icon-btn"
+      [pTooltip]="darkMode() ? 'Açık temaya geç' : 'Koyu temaya geç'"
+      tooltipPosition="bottom"
+      aria-label="Tema değiştir"
+      (click)="toggleDarkMode()"
+    >
+      <i class="pi" [class.pi-moon]="!darkMode()" [class.pi-sun]="darkMode()" aria-hidden="true"></i>
+    </button>
+
+    <button
+      type="button"
+      pRipple
+      class="icon-btn"
+      pTooltip="Bildirimler"
+      tooltipPosition="bottom"
+      aria-label="Bildirimler"
+      (click)="notificationPanel.toggle($event)"
+    >
+      <i class="pi pi-bell" aria-hidden="true"></i>
+      @if (unreadCount() > 0) {
+        <span class="icon-btn__badge">{{ unreadCount() }}</span>
+      }
+    </button>
+
+    <span class="topbar__divider" aria-hidden="true"></span>
+
+    @if (user(); as u) {
+      <button type="button" class="user-chip" (click)="userPanel.toggle($event)">
+        <p-avatar [label]="u.initials" shape="circle" />
+        <span class="user-chip__meta">
+          <span class="user-chip__name">{{ u.fullName }}</span>
+          <span class="user-chip__role">{{ u.role }}</span>
+        </span>
+        <i class="pi pi-chevron-down user-chip__caret" aria-hidden="true"></i>
+      </button>
+    }
+  </div>
+</header>
+
+<!-- Bildirim paneli -->
+<p-popover #notificationPanel appendTo="body" styleClass="app-popover">
+  <ng-template #content>
+    <div class="panel panel--notifications">
+      <div class="panel__head">
+        <span class="panel__title">Bildirimler</span>
+        <button type="button" class="panel__action" (click)="markAllRead()">
+          Tümünü okundu işaretle
+        </button>
+      </div>
+
+      <ul class="notif">
+        @for (item of notifications(); track item.id) {
+          <li class="notif__item" [class.notif__item--unread]="!item.read">
+            <span class="notif__dot notif__dot--{{ item.severity }}" aria-hidden="true"></span>
+            <div class="notif__body">
+              <span class="notif__title">{{ item.title }}</span>
+              <span class="notif__detail">{{ item.detail }}</span>
+              <span class="notif__time">{{ item.createdAt | date: 'dd MMMM yyyy HH:mm' }}</span>
+            </div>
+          </li>
+        } @empty {
+          <li class="notif__empty">Bildirim yok.</li>
+        }
+      </ul>
+    </div>
+  </ng-template>
+</p-popover>
+
+<!-- Kullanıcı paneli (klasik açılır pencere) -->
+<p-popover #userPanel appendTo="body" styleClass="app-popover">
+  <ng-template #content>
+    @if (user(); as u) {
+      <div class="panel panel--user">
+        <div class="user-panel__head">
+          <p-avatar [label]="u.initials" size="large" shape="circle" />
+          <div class="user-panel__identity">
+            <span class="user-panel__name">{{ u.fullName }}</span>
+            <span class="user-panel__title">{{ u.title }}</span>
+            <span class="user-panel__mail">{{ u.email }}</span>
+          </div>
+        </div>
+
+        <!-- Birim ince barda, rol de üstteki kullanıcı çipinde zaten yazıyor;
+             burada yalnızca başka yerde görünmeyen alanlar var. -->
+        <dl class="user-panel__facts">
+          <div><dt>Sicil</dt><dd>{{ u.registryNo }}</dd></div>
+          <div><dt>Telefon</dt><dd>{{ u.phone }}</dd></div>
+          <div><dt>Son giriş</dt><dd>{{ u.lastLoginAt | date: 'dd.MM.yyyy HH:mm' }}</dd></div>
+        </dl>
+
+        <ul class="user-panel__menu">
+          <li>
+            <a routerLink="/profil" (click)="userPanel.hide()">
+              <i class="pi pi-user" aria-hidden="true"></i>Profilim
+            </a>
+          </li>
+          <li>
+            <a routerLink="/ayarlar" (click)="userPanel.hide()">
+              <i class="pi pi-cog" aria-hidden="true"></i>Hesap Ayarları
+            </a>
+          </li>
+          <li>
+            <a routerLink="/sifre-degistir" (click)="userPanel.hide()">
+              <i class="pi pi-key" aria-hidden="true"></i>Şifre Değiştir
+            </a>
+          </li>
+          <li>
+            <a routerLink="/yardim" (click)="userPanel.hide()">
+              <i class="pi pi-question-circle" aria-hidden="true"></i>Yardım ve Destek
+            </a>
+          </li>
+        </ul>
+
+        <button type="button" class="user-panel__signout" (click)="signOut(); userPanel.hide()">
+          <i class="pi pi-sign-out" aria-hidden="true"></i>Çıkış Yap
+        </button>
+      </div>
+    }
+  </ng-template>
+</p-popover>

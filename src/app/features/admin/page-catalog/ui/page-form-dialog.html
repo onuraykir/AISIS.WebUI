@@ -1,0 +1,110 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '480px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="page-name">Ad</label>
+      <input id="page-name" pInputText formControlName="name" placeholder="Program Çıktıları" />
+
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <p class="form__error">Ad zorunludur.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="page-route">Adres</label>
+      <input
+        id="page-route"
+        pInputText
+        formControlName="route"
+        placeholder="/program-cikti/liste"
+        autocomplete="off"
+        spellcheck="false"
+        (input)="onRouteInput($event)"
+      />
+      <p class="form__help">
+        Uygulamanın yönlendirme tablosunda <strong>aynı adres tanımlı olmalıdır</strong>; ekranla
+        bağ buradan kurulur. Küçük harf, kelimeler tire ile.
+      </p>
+
+      @if (form.controls.route.touched && form.controls.route.invalid) {
+        <p class="form__error">Adres zorunludur ve <code>/ornek-adres/alt-yol</code> biçiminde olmalıdır.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="page-icon">İkon</label>
+      <div class="form__icon-row">
+        <span class="form__icon-preview">
+          <i class="{{ form.controls.icon.value || 'pi pi-file' }}" aria-hidden="true"></i>
+        </span>
+        <input
+          id="page-icon"
+          pInputText
+          formControlName="icon"
+          placeholder="pi pi-list"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+    </div>
+
+    @if (!isEdit()) {
+      <div class="form__field">
+        <label class="form__label" for="page-module">Yerleştirme</label>
+        <p-select
+          inputId="page-module"
+          [options]="placementOptions()"
+          optionLabel="label"
+          optionValue="id"
+          formControlName="moduleId"
+          placeholder="Havuzda bırak"
+          appendTo="body"
+          class="form__select"
+        />
+        <p class="form__help">
+          Havuzdaki sayfa menüde görünmez ve <strong>yetkilendirilemez</strong>; sonradan
+          yerleştirebilirsiniz.
+        </p>
+      </div>
+    }
+
+    <div class="form__field">
+      <label class="form__label" for="page-description">Açıklama</label>
+      <textarea
+        id="page-description"
+        pTextarea
+        formControlName="description"
+        rows="2"
+        placeholder="Bu ekran ne yapar?"
+      ></textarea>
+    </div>
+
+    <div class="form__switch">
+      <p-toggleswitch formControlName="isActive" inputId="page-active" />
+      <label for="page-active">
+        <span class="form__switch-title">Aktif</span>
+        <span class="form__switch-help">Pasif sayfa menüde görünmez, yetkileri silinmez.</span>
+      </label>
+    </div>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Oluştur' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

@@ -1,0 +1,111 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '460px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="module-code">
+        Kod
+        @if (isEdit()) {
+          <span class="form__hint">değiştirilemez</span>
+        }
+      </label>
+
+      <input
+        id="module-code"
+        pInputText
+        formControlName="code"
+        placeholder="ACCREDITATION"
+        autocomplete="off"
+        spellcheck="false"
+        (input)="onCodeInput($event)"
+      />
+
+      <p class="form__help">
+        Ortamlar arası sabit tutamaç. Yalnızca A–Z, 0–9 ve alt çizgi. Bir kez verilir.
+      </p>
+
+      @if (form.controls.code.touched && form.controls.code.invalid) {
+        <p class="form__error">Kod zorunludur ve yalnızca A–Z, 0–9, alt çizgi içerebilir.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="module-name">Ad</label>
+      <input id="module-name" pInputText formControlName="name" placeholder="Akreditasyon" />
+
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <p class="form__error">Ad zorunludur.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="module-icon">İkon</label>
+
+      <div class="form__icon-row">
+        <span class="form__icon-preview">
+          <i class="{{ form.controls.icon.value || 'pi pi-folder' }}" aria-hidden="true"></i>
+        </span>
+        <input
+          id="module-icon"
+          pInputText
+          formControlName="icon"
+          placeholder="pi pi-verified"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <div class="form__icon-picker">
+        @for (icon of iconSuggestions; track icon) {
+          <button
+            type="button"
+            class="form__icon-option"
+            [class.form__icon-option--active]="form.controls.icon.value === icon"
+            [attr.aria-label]="icon"
+            (click)="pickIcon(icon)"
+          >
+            <i class="{{ icon }}" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="module-description">Açıklama</label>
+      <textarea
+        id="module-description"
+        pTextarea
+        formControlName="description"
+        rows="2"
+        placeholder="Bu modülün kapsamı"
+      ></textarea>
+    </div>
+
+    <div class="form__switch">
+      <p-toggleswitch formControlName="isActive" inputId="module-active" />
+      <label for="module-active">
+        <span class="form__switch-title">Aktif</span>
+        <span class="form__switch-help">Pasif modül menüde görünmez, yetkileri silinmez.</span>
+      </label>
+    </div>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Oluştur' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

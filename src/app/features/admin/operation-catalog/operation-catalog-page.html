@@ -1,0 +1,443 @@
+<app-admin-toolbar
+  title="İşlem Kataloğu"
+  description="Sayfa → İşlem → Eylem. İşlemi siz tanımlarsınız: sayfanın bir bölümü gibi (&quot;Grid İşlemleri&quot;, &quot;Eşik Yönetimi&quot;). Eylemler ortak sözlükten seçilir, uç nokta eylemde durur ve yetki de oraya verilir."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button type="button" class="btn btn--ghost" (click)="openDictionary()">
+      <i class="pi pi-book" aria-hidden="true"></i>
+      Eylem Sözlüğü
+      <span class="btn__count">{{ store.definitionCount() }}</span>
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.operationTotal() }}</span>
+      <span class="stats__label">işlem</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.actionTotal() }}</span>
+      <span class="stats__label">eylem</span>
+    </div>
+    <div
+      class="stats__item"
+      [class.stats__item--attention]="store.missingCount() > 0"
+      pTooltip="İşlemi olmayan sayfa menüde görünmez ve yetkilendirilemez"
+      tooltipPosition="bottom"
+    >
+      <span class="stats__value">{{ store.missingCount() }}</span>
+      <span class="stats__label">işlemsiz sayfa</span>
+    </div>
+    <div
+      class="stats__item"
+      [class.stats__item--attention]="store.unmappedEndpointCount() > 0"
+      pTooltip="Hiçbir eyleme bağlanmamış uç nokta — bu adresler yetkilendirilmemiş demektir"
+      tooltipPosition="bottom"
+    >
+      <span class="stats__value">{{ store.unmappedEndpointCount() }}</span>
+      <span class="stats__label">eşlenmemiş uç</span>
+    </div>
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">İşlem kataloğu yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board board--operations">
+    <!-- ── Sayfalar ── -->
+    <section class="app-card pages" aria-label="Sayfa listesi">
+      <header class="filters">
+        <div class="filters__chips" role="group" aria-label="Süzgeç">
+          @for (option of filterOptions; track option.value) {
+            <button
+              type="button"
+              class="chip"
+              [class.chip--active]="store.filter() === option.value"
+              (click)="setFilter(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          }
+        </div>
+
+        <p-iconfield class="filters__search">
+          <p-inputicon class="pi pi-search" />
+          <input
+            pInputText
+            type="text"
+            placeholder="Sayfa, adres veya işlem ara…"
+            aria-label="Sayfa ara"
+            [value]="store.search()"
+            (input)="onSearch($event)"
+          />
+        </p-iconfield>
+      </header>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4, 5, 6, 7]; track row) {
+            <p-skeleton height="42px" />
+          }
+        </div>
+      } @else if (store.isEmpty()) {
+        <div class="state state--inline">
+          <i class="pi pi-inbox state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Sonuç yok</h3>
+          <p class="state__text">Süzgeci veya aramayı değiştirin.</p>
+        </div>
+      } @else {
+        @for (group of store.groups(); track group.key) {
+          <section class="group">
+            <h3 class="group__title" [class.group__title--pool]="group.isPool">
+              @if (group.isPool) {
+                <i class="pi pi-inbox" aria-hidden="true"></i>
+              } @else {
+                <i class="pi pi-folder" aria-hidden="true"></i>
+              }
+              {{ group.label }}
+              <span class="group__count">{{ group.pages.length }}</span>
+            </h3>
+
+            <ul class="rows">
+              @for (page of group.pages; track page.id) {
+                <li>
+                  <div class="row" [class.row--selected]="selected()?.id === page.id">
+                    <button type="button" class="row__main" (click)="select(page)">
+                      <i class="row__icon {{ page.icon || 'pi pi-file' }}" aria-hidden="true"></i>
+
+                      <span class="row__text">
+                        <span class="row__name">{{ page.name }}</span>
+                        <code class="row__route">{{ page.route }}</code>
+                      </span>
+
+                      <span class="row__meta">
+                        @if (page.operationCount === 0) {
+                          <span
+                            class="row__badge row__badge--warn"
+                            pTooltip="İşlemi yok: menüde görünmez, yetkilendirilemez"
+                            tooltipPosition="top"
+                          >
+                            işlem yok
+                          </span>
+                        } @else {
+                          <span class="row__badge">
+                            {{ page.operationCount }} / {{ page.actionCount }}
+                          </span>
+                        }
+                      </span>
+                    </button>
+                  </div>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      }
+    </section>
+
+    <!-- ── Seçili sayfanın işlemleri ── -->
+    <section class="app-card detail" aria-label="Sayfa işlemleri">
+      @if (selected(); as page) {
+        <header class="detail__head">
+          <span class="detail__icon">
+            <i class="{{ page.icon || 'pi pi-file' }}" aria-hidden="true"></i>
+          </span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ page.name }}</h3>
+            <code class="detail__route">{{ page.route }}</code>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasAction="'CREATE'; operation: 'PAGE_OPERATION'"
+            [disabled]="store.saving()"
+            (click)="openCreateOperation()"
+          >
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            İşlem
+          </button>
+        </header>
+
+        @if (!page.isPlaced) {
+          <p class="detail__note detail__note--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Bu sayfa havuzda: işlem tanımlanabilir ama bir modüle yerleştirilene kadar
+            eylemlerine rol yetkisi verilemez.
+          </p>
+        }
+
+        @for (operation of page.operations; track operation.id) {
+          <article class="op" [class.op--passive]="!operation.isActive">
+            <header class="op__head">
+              <div class="op__identity">
+                <h4 class="op__name">
+                  {{ operation.name }}
+                  <code class="row__code">{{ operation.code }}</code>
+                  @if (!operation.isActive) {
+                    <span class="row__badge row__badge--passive">Pasif</span>
+                  }
+                </h4>
+
+                @if (operation.description) {
+                  <p class="op__description">{{ operation.description }}</p>
+                }
+              </div>
+
+              <div class="op__meta">
+                @if (operationGrantCount(operation) > 0) {
+                  <span
+                    class="row__badge row__badge--granted"
+                    pTooltip="Rollere verilmiş yetki sayısı"
+                    tooltipPosition="top"
+                  >
+                    {{ operationGrantCount(operation) }} yetki
+                  </span>
+                }
+              </div>
+
+              <div class="row__actions op__actions">
+                <button
+                  type="button"
+                  class="row__action"
+                  pTooltip="Yukarı"
+                  tooltipPosition="top"
+                  aria-label="Yukarı taşı"
+                  [disabled]="store.saving() || !store.canShiftOperationUp(operation)"
+                  (click)="shiftOperationUp(operation)"
+                >
+                  <i class="pi pi-arrow-up"></i>
+                </button>
+
+                <button
+                  type="button"
+                  class="row__action"
+                  pTooltip="Aşağı"
+                  tooltipPosition="top"
+                  aria-label="Aşağı taşı"
+                  [disabled]="store.saving() || !store.canShiftOperationDown(operation)"
+                  (click)="shiftOperationDown(operation)"
+                >
+                  <i class="pi pi-arrow-down"></i>
+                </button>
+
+                <button
+                  type="button"
+                  class="row__action"
+                  pTooltip="Düzenle"
+                  tooltipPosition="top"
+                  aria-label="Düzenle"
+                  [disabled]="store.saving()"
+                  (click)="openEditOperation(operation)"
+                >
+                  <i class="pi pi-pencil"></i>
+                </button>
+
+                <button
+                  type="button"
+                  class="row__action row__action--danger"
+                  [pTooltip]="deleteOperationBlockedReason(operation) ?? 'Sil'"
+                  tooltipPosition="top"
+                  aria-label="Sil"
+                  [disabled]="store.saving() || !!deleteOperationBlockedReason(operation)"
+                  (click)="confirmDeleteOperation(operation)"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </header>
+
+            <!-- Eylemler: yetkinin birimi -->
+            <ul class="rows op__list">
+              @for (action of operation.actions; track action.id) {
+                <li>
+                  <div class="row" [class.row--passive]="!action.isActive">
+                    <span class="row__main row__main--static">
+                      <span class="row__text">
+                        <span class="row__name">
+                          {{ action.actionName }}
+                          <code class="row__code">{{ action.actionCode }}</code>
+                        </span>
+
+                        <span class="endpoint" [class.endpoint--none]="!action.endpoint">
+                          <span class="method {{ methodClass(action) }}">
+                            {{ action.httpMethod ?? 'UNAVAILABLE' }}
+                          </span>
+
+                          @if (action.endpoint) {
+                            <code>{{ action.endpoint }}</code>
+                          } @else {
+                            uç nokta yok — adres eşleştirmesine girmez
+                          }
+                        </span>
+                      </span>
+
+                      <span class="row__meta">
+                        @if (action.grantCount > 0) {
+                          <span
+                            class="row__badge row__badge--granted"
+                            pTooltip="Rollere verilmiş yetki sayısı"
+                            tooltipPosition="top"
+                          >
+                            {{ action.grantCount }}
+                          </span>
+                        }
+                      </span>
+                    </span>
+
+                    <div class="row__actions">
+                      <button
+                        type="button"
+                        class="row__action"
+                        pTooltip="Uç noktayı düzenle"
+                        tooltipPosition="top"
+                        aria-label="Düzenle"
+                        [disabled]="store.saving()"
+                        (click)="openEditAction(operation, action)"
+                      >
+                        <i class="pi pi-pencil"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="row__action row__action--danger"
+                        [pTooltip]="detachBlockedReason(action) ?? 'Kaldır'"
+                        tooltipPosition="top"
+                        aria-label="Kaldır"
+                        [disabled]="store.saving() || !!detachBlockedReason(action)"
+                        (click)="confirmDetachAction(action)"
+                      >
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              } @empty {
+                <li class="op__empty">
+                  Bu işlemde henüz eylem yok. Aşağıdaki havuzdan seçerek bağlayın.
+                </li>
+              }
+            </ul>
+
+            <!-- Havuz: bu işleme hâlâ bağlanabilecek eylemler -->
+            @if (availableFor(operation).length > 0) {
+              <div class="pool">
+                @for (definition of availableFor(operation); track definition.id) {
+                  <button
+                    type="button"
+                    class="pool__chip"
+                    *appHasAction="'CREATE'; operation: 'OPERATION_ACTION'"
+                    [disabled]="store.saving()"
+                    [pTooltip]="definition.description"
+                    tooltipPosition="top"
+                    (click)="openAttachWith(operation, definition)"
+                  >
+                    <i class="pi pi-plus" aria-hidden="true"></i>
+                    {{ definition.name }}
+                  </button>
+                }
+              </div>
+            }
+          </article>
+        } @empty {
+          <div class="state state--inline">
+            <i class="pi pi-sitemap state__icon" aria-hidden="true"></i>
+            <h3 class="state__title">Bu sayfada işlem yok</h3>
+            <p class="state__text">
+              Sayfanın bir bölümünü işlem olarak tanımlayın — örneğin "Grid İşlemleri" —
+              sonra altına Görüntüle, Ekle, Güncelle, Sil eylemlerini bağlayın.
+              En az bir işlemde <code>VIEW</code> olmadan sayfa menüde görünmez.
+            </p>
+            <div class="state__actions">
+              <button
+                type="button"
+                class="btn btn--primary"
+                *appHasAction="'CREATE'; operation: 'PAGE_OPERATION'"
+                [disabled]="store.saving()"
+                (click)="openCreateOperation()"
+              >
+                <i class="pi pi-plus" aria-hidden="true"></i>
+                İlk işlemi tanımla
+              </button>
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Sayfa seçilmedi</h3>
+          <p class="state__text">
+            Soldan bir sayfa seçin; o sayfanın işlemlerini ve her işlemin eylemlerini
+            görüp yenilerini bağlayabilirsiniz.
+          </p>
+        </div>
+      }
+    </section>
+  </div>
+}
+
+<app-action-dictionary-dialog
+  [(visible)]="dictionaryOpen"
+  [definitions]="store.catalog()"
+  [saving]="store.saving()"
+  (create)="openCreateDefinition()"
+  (edit)="openEditDefinition($event)"
+  (remove)="confirmDeleteDefinition($event)"
+  (shift)="shiftDefinition($event)"
+/>
+
+<app-code-name-dialog
+  [(visible)]="definitionDialogOpen"
+  [heading]="definitionInDialog() ? 'Eylemi Düzenle' : 'Yeni Eylem Tanımı'"
+  [value]="definitionDialogValue()"
+  codePlaceholder="EXPORT"
+  namePlaceholder="Dışa Aktar"
+  descriptionPlaceholder="Bu eylem ne yapar?"
+  [saving]="store.saving()"
+  (save)="onDefinitionSave($event)"
+/>
+
+<app-code-name-dialog
+  [(visible)]="operationDialogOpen"
+  [heading]="operationInDialog() ? 'İşlemi Düzenle' : 'Yeni İşlem'"
+  [value]="operationDialogValue()"
+  codePlaceholder="GRID"
+  codeHelp="Sayfa içinde değişmez tutamaç. Arayüz düğmeleri bu koda bakar: *appHasAction=&quot;'CREATE'; operation: 'GRID'&quot;. Yalnızca A–Z, 0–9 ve alt çizgi."
+  namePlaceholder="Grid İşlemleri"
+  descriptionPlaceholder="Sayfanın bu bölümü ne yapar?"
+  [showActive]="true"
+  activeHelp="Pasif işlem menüde dönmez; verilmiş rol yetkileri silinmez."
+  [saving]="store.saving()"
+  (save)="onOperationSave($event)"
+/>
+
+<app-operation-action-dialog
+  [(visible)]="actionDialogOpen"
+  [action]="actionInDialog()"
+  [available]="actionDialogAvailable()"
+  [endpoints]="store.endpoints()"
+  [operationName]="actionTargetOperation()?.name ?? ''"
+  [preselectDefinitionId]="actionPreselect()"
+  [saving]="store.saving()"
+  (save)="onActionSave($event)"
+/>
+
+<p-confirmdialog />

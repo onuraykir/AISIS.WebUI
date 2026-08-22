@@ -1,0 +1,236 @@
+/* NOT: Açılır panellerin (bildirim / kullanıcı) stilleri styles.scss içindedir;
+   p-popover içeriği <body>'ye taşındığı için orada global tutmak daha güvenli. */
+
+:host {
+  display: block;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--app-topbar-height);
+  padding-inline: 10px 14px;
+  background: var(--app-chrome-bg);
+  border-bottom: 1px solid var(--app-chrome-border);
+  color: var(--app-chrome-text);
+}
+
+.topbar__left,
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar__left {
+  flex: 0 0 auto;
+}
+
+.topbar__right {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.topbar__divider {
+  width: 1px;
+  height: 26px;
+  margin-inline: 6px;
+  background: var(--app-chrome-border);
+}
+
+/* --- Kurum kimliği --- */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand:hover {
+  background: var(--app-chrome-hover);
+}
+
+.brand__logo {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand__title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.brand__subtitle {
+  font-size: 11px;
+  color: var(--app-chrome-text-muted);
+  white-space: nowrap;
+}
+
+/* --- İkon düğmeleri --- */
+.icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--app-chrome-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.icon-btn:hover {
+  background: var(--app-chrome-hover);
+  color: var(--app-chrome-text);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--app-brand);
+  outline-offset: 1px;
+}
+
+.icon-btn__badge {
+  position: absolute;
+  top: 3px;
+  inset-inline-end: 3px;
+  min-width: 16px;
+  height: 16px;
+  padding-inline: 4px;
+  border-radius: 8px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* --- Arama ---
+   Sağ grubun ilk elemanı. Dar duruyor, odaklanınca genişliyor:
+   normalde barın dengesini bozmuyor, kullanılırken yer açıyor. */
+.topbar__search {
+  position: relative;
+  flex: 0 0 auto;
+  width: 200px;
+  margin-inline-end: 4px;
+  transition: width 0.18s ease;
+}
+
+.topbar__search:focus-within {
+  width: 280px;
+}
+
+.topbar__search p-iconfield {
+  display: block;
+  width: 100%;
+}
+
+/* Kısayol ipucu — yalnızca kutu boşken görünür. */
+.topbar__kbd {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 9px;
+  transform: translateY(-50%);
+  padding: 2px 6px;
+  border: 1px solid var(--app-chrome-border);
+  border-radius: 5px;
+  color: var(--app-chrome-text-muted);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.topbar__search:focus-within .topbar__kbd {
+  display: none;
+}
+
+
+.topbar__search-input {
+  width: 100%;
+  height: 34px;
+  padding-block: 0;
+  border-radius: 999px;
+  background: var(--app-chrome-bg-elevated);
+  border-color: var(--app-chrome-border);
+  color: var(--app-chrome-text);
+  font-size: 13px;
+}
+
+.topbar__search-input:focus {
+  border-color: color-mix(in srgb, var(--app-brand) 55%, var(--app-chrome-border));
+  box-shadow: none;
+}
+
+.topbar__search-input::placeholder {
+  color: var(--app-chrome-text-muted);
+}
+
+/* NOT: .search-results* stilleri styles.scss içinde (bileşen stili bütçesi 4 kB). */
+
+/* --- Kullanıcı çipi --- */
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.user-chip:hover {
+  background: var(--app-chrome-hover);
+  border-color: var(--app-chrome-border);
+}
+
+.user-chip__meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  text-align: start;
+}
+
+.user-chip__name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.user-chip__role {
+  font-size: 11px;
+  color: var(--app-chrome-text-muted);
+  white-space: nowrap;
+}
+
+.user-chip__caret {
+  font-size: 10px;
+  color: var(--app-chrome-text-muted);
+}
+
+@media (max-width: 900px) {
+  .brand__text,
+  .topbar__search,
+  .user-chip__meta {
+    display: none;
+  }
+}

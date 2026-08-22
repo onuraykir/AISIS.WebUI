@@ -1,0 +1,113 @@
+<div
+  class="row"
+  [class.row--selected]="selected()"
+  [class.row--sub]="node().level === 1"
+  [class.row--passive]="!node().isActive"
+>
+  <!-- Aç/kapat yalnızca çocuğu olan ana modülde anlamlı; yoksa hizayı korumak
+       için aynı genişlikte boş yer bırakılıyor. -->
+  @if (hasChildren()) {
+    <button
+      type="button"
+      class="row__chevron"
+      [attr.aria-expanded]="expanded()"
+      [attr.aria-label]="expanded() ? 'Alt modülleri gizle' : 'Alt modülleri göster'"
+      (click)="toggle.emit()"
+    >
+      <i class="pi" [class.pi-chevron-down]="expanded()" [class.pi-chevron-right]="!expanded()"></i>
+    </button>
+  } @else {
+    <span class="row__chevron row__chevron--empty" aria-hidden="true"></span>
+  }
+
+  <button type="button" class="row__main" (click)="select.emit()">
+    <i class="row__icon {{ icon() }}" aria-hidden="true"></i>
+
+    <span class="row__name">{{ node().name }}</span>
+
+    <code class="row__code">{{ node().code }}</code>
+
+    @if (node().pageCount > 0) {
+      <span class="row__badge" pTooltip="Doğrudan bu modüldeki sayfa sayısı" tooltipPosition="top">
+        {{ node().pageCount }} sayfa
+      </span>
+    }
+
+    @if (!node().isActive) {
+      <span class="row__badge row__badge--passive">Pasif</span>
+    }
+
+    @if (node().isBoundToGroups) {
+      <i
+        class="pi pi-lock row__lock"
+        pTooltip="Bir veya daha fazla kullanıcı grubunun kapsamında — silinemez"
+        tooltipPosition="top"
+        aria-label="Kullanıcı gruplarının kapsamında"
+      ></i>
+    }
+  </button>
+
+  <div class="row__actions">
+    @if (canAddChild()) {
+      <button
+        type="button"
+        class="row__action"
+        pTooltip="Alt modül ekle"
+        tooltipPosition="top"
+        aria-label="Alt modül ekle"
+        [disabled]="busy()"
+        (click)="addChild.emit()"
+      >
+        <i class="pi pi-plus"></i>
+      </button>
+    }
+
+    <button
+      type="button"
+      class="row__action"
+      pTooltip="Yukarı taşı"
+      tooltipPosition="top"
+      aria-label="Yukarı taşı"
+      [disabled]="busy() || !canMoveUp()"
+      (click)="moveUp.emit()"
+    >
+      <i class="pi pi-arrow-up"></i>
+    </button>
+
+    <button
+      type="button"
+      class="row__action"
+      pTooltip="Aşağı taşı"
+      tooltipPosition="top"
+      aria-label="Aşağı taşı"
+      [disabled]="busy() || !canMoveDown()"
+      (click)="moveDown.emit()"
+    >
+      <i class="pi pi-arrow-down"></i>
+    </button>
+
+    <button
+      type="button"
+      class="row__action"
+      pTooltip="Düzenle"
+      tooltipPosition="top"
+      aria-label="Düzenle"
+      [disabled]="busy()"
+      (click)="edit.emit()"
+    >
+      <i class="pi pi-pencil"></i>
+    </button>
+
+    <button
+      type="button"
+      class="row__action row__action--danger"
+      pTooltip="Sil"
+      tooltipPosition="top"
+      aria-label="Sil"
+      [disabled]="busy()"
+      (click)="remove.emit()"
+    >
+      <i class="pi pi-trash"></i>
+    </button>
+  </div>
+</div>

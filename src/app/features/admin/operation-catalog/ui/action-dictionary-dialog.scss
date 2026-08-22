@@ -1,0 +1,39 @@
+/* Satır dili (.row, .row__*) src/styles/_admin.scss içinde;
+   buradakiler yalnızca diyaloga özgü. */
+
+.dict__intro {
+  margin: 0 0 12px;
+  color: var(--p-text-muted-color);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.dict__rows {
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+/* Diyalogda satır eylemleri hover'a bağlı olmasın: liste kısa, hepsi görünsün. */
+.dict__rows .row__actions {
+  opacity: 1;
+}
+
+.dict__empty {
+  padding: 24px 8px;
+  color: var(--p-text-muted-color);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.row__badge--muted {
+  opacity: 0.5;
+}
+
+.dict__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--p-content-border-color);
+}

@@ -1,0 +1,86 @@
+:host {
+  display: block;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr);
+  grid-template-rows: var(--app-topbar-height) var(--app-subbar-height) minmax(0, 1fr);
+  grid-template-areas:
+    'topbar topbar'
+    'sidebar subbar'
+    'sidebar content';
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--app-content-bg);
+  transition: grid-template-columns 0.18s ease;
+}
+
+.shell--collapsed {
+  grid-template-columns: var(--app-sidebar-width-collapsed) minmax(0, 1fr);
+}
+
+.shell__topbar {
+  grid-area: topbar;
+  z-index: 30;
+}
+
+.shell__sidebar {
+  grid-area: sidebar;
+  min-height: 0;
+  z-index: 20;
+}
+
+.shell__subbar {
+  grid-area: subbar;
+  z-index: 10;
+}
+
+/* Sayfa içeriği: tek kayan bölge burasıdır. */
+.shell__content {
+  grid-area: content;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.shell__container {
+  max-width: 1600px;
+  padding: 20px 24px 32px;
+  margin-inline: auto;
+}
+
+/* --- Mobil: menü içeriği itmek yerine üstüne kayar --- */
+.shell--mobile {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'topbar'
+    'subbar'
+    'content';
+
+  .shell__sidebar {
+    position: fixed;
+    inset-block: var(--app-topbar-height) 0;
+    inset-inline-start: 0;
+    width: var(--app-sidebar-width);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 1100;
+  }
+
+  .shell__container {
+    padding-inline: 14px;
+  }
+}
+
+.shell--mobile.shell--drawer-open .shell__sidebar {
+  transform: translateX(0);
+  box-shadow: 0 0 40px rgb(0 0 0 / 35%);
+}
+
+.shell__backdrop {
+  position: fixed;
+  inset: var(--app-topbar-height) 0 0 0;
+  z-index: 1000;
+  background: rgb(0 0 0 / 45%);
+}

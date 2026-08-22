@@ -1,0 +1,500 @@
+/* ==================================================================
+   Yönetim ekranlarının ortak yerleşim dili
+   ==================================================================
+   Beş yönetim ekranı da aynı iskeleti kullanır: özet sayılar, iki bölmeli
+   pano, sağda künye paneli, boş/hata durumları ve seçilebilir satırlar.
+   Her ekranda tekrar yazmak yerine burada tek kez tanımlanır — hem bakım
+   hem de bileşen stili bütçesi (4 kB) açısından doğru yer burasıdır.
+
+   Ekrana ÖZGÜ olan her şey (ağaç girintisi, süzgeç çipleri, grup başlıkları)
+   ilgili bileşenin kendi .scss dosyasında kalır.
+   ================================================================== */
+
+/* --- Özet sayılar --- */
+.stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.stats__item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+/* Dikkat çekmesi gereken sayaç (ör. havuzda bekleyen sayfa). */
+.stats__item--attention {
+  border-color: color-mix(in srgb, var(--app-brand) 60%, transparent);
+  background: color-mix(in srgb, var(--app-brand) 12%, transparent);
+}
+
+.stats__value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.stats__label {
+  font-size: 11.5px;
+  color: var(--p-text-muted-color);
+}
+
+/* --- İki bölmeli pano --- */
+.board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.board__main {
+  padding: 12px;
+  min-height: 320px;
+}
+
+.board__detail {
+  position: sticky;
+  top: 12px;
+  padding: 16px;
+}
+
+/* --- Bölme başlığı --- */
+.pane__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  color: var(--p-text-muted-color);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pane__title i {
+  font-size: 11px;
+  color: var(--p-primary-color);
+}
+
+/* Metin gibi görünen ikincil eylem (Tümünü seç, Temizle…). */
+.linkbtn {
+  border: 0;
+  background: transparent;
+  color: var(--p-primary-color);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.linkbtn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.linkbtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --- Seçilebilir satır --- */
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-inline: 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+
+.row:hover {
+  background: var(--p-content-hover-background);
+}
+
+.row--selected {
+  background: color-mix(in srgb, var(--app-brand) 14%, transparent);
+  border-color: color-mix(in srgb, var(--app-brand) 45%, transparent);
+}
+
+.row--passive .row__name,
+.row--passive .row__icon {
+  opacity: 0.55;
+}
+
+.row__main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 9px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--p-text-color);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.row__icon {
+  flex: 0 0 auto;
+  font-size: 14px;
+  color: var(--p-primary-color);
+}
+
+/* Satır içinde iki satırlık metin bloğu (ad + ikincil bilgi). */
+.row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.row__name {
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row__sub {
+  font-size: 11px;
+  color: var(--p-text-muted-color);
+}
+
+/* Teknik anahtar rozeti (modül kodu, işlem kodu). */
+.row__code {
+  padding: 1px 6px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 4px;
+  color: var(--p-text-muted-color);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.row__meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+
+.row__badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--p-content-hover-background);
+  color: var(--p-text-muted-color);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.row__badge--passive {
+  background: color-mix(in srgb, #dc2626 12%, transparent);
+  color: #b91c1c;
+}
+
+/* Eylemler üzerine gelince VE odakta açılır: klavyeyle gezinen kaybolmasın. */
+.row__actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: 0 0 auto;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.row:hover .row__actions,
+.row:focus-within .row__actions,
+.row--selected .row__actions {
+  opacity: 1;
+}
+
+.row__action {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--p-text-muted-color);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.row__action:hover:not(:disabled) {
+  background: var(--p-content-border-color);
+  color: var(--p-text-color);
+}
+
+.row__action:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.row__action--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, #dc2626 14%, transparent);
+  color: #dc2626;
+}
+
+/* --- Boş / hata / yükleniyor durumları --- */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.state--inline {
+  padding: 40px 16px;
+}
+
+.state__icon {
+  font-size: 26px;
+  color: var(--p-text-muted-color);
+  opacity: 0.5;
+}
+
+.state__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.state__text {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--p-text-muted-color);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.state__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 4px 4px;
+}
+
+/* --- Sağdaki künye paneli --- */
+.detail__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.detail__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--app-brand) 20%, transparent);
+  color: var(--p-text-color);
+  font-size: 16px;
+}
+
+.detail__identity {
+  min-width: 0;
+}
+
+.detail__name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--p-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Kod ve adres gibi teknik anahtarlar tek biçimde. */
+.detail__code,
+.detail__route {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--p-text-muted-color);
+}
+
+.detail__description {
+  margin: 14px 0 0;
+  color: var(--p-text-muted-color);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.detail__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin: 16px 0 0;
+}
+
+.detail__facts dt {
+  color: var(--p-text-muted-color);
+  font-size: 11px;
+}
+
+.detail__facts dd {
+  margin: 1px 0 0;
+  color: var(--p-text-color);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail__passive {
+  color: #b91c1c;
+}
+
+.detail__section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--p-content-border-color);
+}
+
+.detail__section-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--p-text-muted-color);
+}
+
+.detail__move {
+  display: flex;
+  gap: 8px;
+}
+
+.detail__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--p-text-muted-color);
+}
+
+.detail__note--warn {
+  color: #b45309;
+}
+
+.detail__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--p-content-border-color);
+}
+
+.detail__actions .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+/* --- HTTP metodu rozetleri ---
+   İşlem Kataloğu ve Sayfa Kataloğu aynı rozetleri kullanır: yönetici neyi
+   yetkilendirdiğini iki ekranda da aynı dille görmeli. Renk, eylemin
+   yıkıcılığını bir bakışta verir.
+
+   UNAVAILABLE: eylemin arkasında çağrılacak bir uç yok. İki hâli birden
+   kapsar — salt görünürlük yetkileri (VIEW) ve ucu henüz yazılmamış eylemler.
+   Sunucudaki adres eşleştirmesine girmezler; ikisi de gözden kaçmamalı. */
+.method {
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: var(--p-content-hover-background);
+  color: var(--p-text-muted-color);
+}
+
+.method--get {
+  background: color-mix(in srgb, #2563eb 14%, transparent);
+  color: #1d4ed8;
+}
+
+.method--post {
+  background: color-mix(in srgb, #16a34a 14%, transparent);
+  color: #15803d;
+}
+
+.method--put,
+.method--patch {
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+  color: #b45309;
+}
+
+.method--delete {
+  background: color-mix(in srgb, #dc2626 14%, transparent);
+  color: #b91c1c;
+}
+
+.method--unavailable {
+  border: 1px dashed var(--p-content-border-color);
+  background: transparent;
+  opacity: 0.75;
+}
+
+/* Rozetin yanındaki uç nokta metni; iki ekranda da aynı. */
+.endpoint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--p-text-muted-color);
+}
+
+.endpoint code {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.endpoint--none {
+  font-style: italic;
+  opacity: 0.8;
+}

@@ -1,0 +1,74 @@
+<nav class="sidebar" [class.sidebar--collapsed]="collapsed() && !isMobile()" aria-label="Ana menü">
+  <ul class="nav">
+    @for (row of rows(); track row.item.id) {
+      <li class="nav__item">
+        @if (row.hasChildren) {
+          <button
+            type="button"
+            pRipple
+            class="nav__row nav__row--folder"
+            [class.nav__row--trail]="isOnActiveTrail(row.item.id)"
+            [class.nav__row--open]="row.expanded"
+            [style.paddingInlineStart.px]="12 + indent(row.level)"
+            [attr.aria-expanded]="row.expanded"
+            [pTooltip]="row.item.label"
+            tooltipPosition="right"
+            [tooltipDisabled]="!collapsed() || isMobile()"
+            (click)="onFolderClick(row.item)"
+          >
+            <i class="nav__icon {{ folderIcon(row) }}" aria-hidden="true"></i>
+            <span class="nav__label">{{ row.item.label }}</span>
+            <i
+              class="nav__chevron pi"
+              [class.pi-chevron-down]="row.expanded"
+              [class.pi-chevron-right]="!row.expanded"
+              aria-hidden="true"
+            ></i>
+          </button>
+        } @else {
+          <a
+            pRipple
+            class="nav__row nav__row--leaf"
+            [routerLink]="row.item.route"
+            routerLinkActive="nav__row--current"
+            [routerLinkActiveOptions]="{ exact: true }"
+            [style.paddingInlineStart.px]="12 + indent(row.level)"
+            [pTooltip]="row.item.label"
+            tooltipPosition="right"
+            [tooltipDisabled]="!collapsed() || isMobile()"
+            (click)="onLeafClick()"
+          >
+            <i class="nav__icon {{ leafIcon(row.item) }}" [class.nav__icon--dot]="!row.item.icon" aria-hidden="true"></i>
+            <span class="nav__label">{{ row.item.label }}</span>
+          </a>
+        }
+      </li>
+    }
+  </ul>
+
+  <footer class="sidebar__footer">
+    @if (collapsed() && !isMobile()) {
+      <!-- Daraltılmışken tek karakter; tam metin tooltip'te. -->
+      <span
+        class="sidebar__copy-mini"
+        [pTooltip]="'© ' + currentYear + ' Çankaya Üniversitesi · Tüm hakları saklıdır'"
+        tooltipPosition="right"
+        >©</span
+      >
+    } @else {
+      <span class="sidebar__copy">© {{ currentYear }} Çankaya Üniversitesi</span>
+      <span class="sidebar__rights">Tüm hakları saklıdır.</span>
+      <span class="sidebar__version">
+        AISIS v0.1.0 ·
+        <span
+          class="sidebar__source"
+          [class.sidebar__source--api]="menuStatus() === 'loaded' && !menuLoadError()"
+          [pTooltip]="menuLoadError() ?? 'Menü GET /api/Menu ucundan geldi'"
+          tooltipPosition="top"
+        >
+          menü: {{ menuStatus() === 'loaded' ? 'api' : menuStatus() === 'failed' ? 'yok' : '…' }}
+        </span>
+      </span>
+    }
+  </footer>
+</nav>

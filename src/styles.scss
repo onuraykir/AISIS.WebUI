@@ -1,1 +1,521 @@
-/* You can add global styles to this file, and also import other style files */
+@use './styles/admin';
+
+/* Global stiller.
+   NOT: primeicons.css angular.json -> styles dizisinden yükleniyor.
+   Buradan @import edilirse Sass deprecation uyarısı üretir, o yüzden orada bırakıldı. */
+
+/* PrimeNG stilleri 'primeng' cascade layer'ına alındığı için (bkz. app.config.ts),
+   katman sırasını burada bildiriyoruz. Bu bloktan sonra yazılan katmansız CSS
+   her zaman PrimeNG'yi ezer — bileşen stillerini !important'sız override edebilirsiniz. */
+@layer theme, base, primeng;
+
+/* ------------------------------------------------------------------
+   Uygulama tasarım değişkenleri
+   ------------------------------------------------------------------
+   Marka renkleri Çankaya Üniversitesi logosundan alındı (sarı #FFED00,
+   siyah #0E0A0F). Sarı geniş alanlarda okunmadığı için yalnızca VURGU
+   olarak kullanılıyor; kabuk (üst bar + sol menü) koyu, içerik açık.
+   Koyu tema <html class="app-dark"> ile devreye giriyor. */
+:root {
+  --app-brand: #ffed00;
+  --app-brand-contrast: #0e0a0f;
+
+  /* Kabuk: üst bar ve sol menü.
+     Nötr gri-mavi yerine SICAK antrasit — logodaki sarı-siyah ikiliyle
+     aynı aileden; sarı vurgu bu zemin üzerinde daha doğal duruyor. */
+  --app-chrome-bg: #191714;
+  --app-chrome-bg-elevated: #232019;
+  --app-chrome-border: #33302a;
+  --app-chrome-hover: #26231d;
+  --app-chrome-active: #302c24;
+  --app-chrome-text: #f0efe9;
+  --app-chrome-text-muted: #a8a49a;
+
+  /* İçerik alanı — logodan gelen sıcak nötr aile (hue ~50°, çok düşük doygunluk).
+     Tam beyaz sayfa uzun kullanımda göz yorduğu için zemin birkaç ton koyu,
+     kartlar da saf beyaz değil kırık beyaz. */
+  --app-content-bg: #e5e3d9;
+  --app-surface: #f7f6f1;
+  --app-subbar-bg: #fbfaf6;
+
+  /* PrimeNG yüzey token'ları da aynı aileye çekiliyor; böylece kart, açılır
+     panel ve tablo aynı zemini paylaşıyor.
+     Bu bildirimler katmansız olduğu için @layer primeng içindeki tema
+     değerlerini her koşulda ezer (bkz. app.config.ts -> cssLayer). */
+  --p-content-background: var(--app-surface);
+  --p-content-border-color: #ddd9cb;
+  --p-content-hover-background: #eeece4;
+  --p-overlay-popover-background: var(--app-surface);
+  --p-overlay-modal-background: var(--app-surface);
+
+  /* Ölçüler — shell grid'i bunlardan besleniyor */
+  --app-topbar-height: 56px;
+  --app-subbar-height: 44px;
+  --app-sidebar-width: 268px;
+  --app-sidebar-width-collapsed: 64px;
+}
+
+/* Koyu temada da aynı sıcak aile. Üstteki :root bildirimleri katmansız
+   olduğu için PrimeNG'nin koyu değerlerini ezerdi; burada tekrar tanımlanıyor. */
+.app-dark {
+  --app-content-bg: #14120e;
+  --app-surface: #1e1b16;
+  --app-subbar-bg: #1e1b16;
+
+  --p-content-background: var(--app-surface);
+  --p-content-border-color: #322e26;
+  --p-content-hover-background: #29251e;
+  --p-overlay-popover-background: var(--app-surface);
+  --p-overlay-modal-background: var(--app-surface);
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--p-font-family, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 14px;
+  background: var(--app-content-bg);
+  color: var(--p-text-color);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Uygulama genelinde kullanılabilecek küçük yardımcılar.
+   Not: Bunlar Tailwind DEĞİL; Tailwind eklerseniz bu bloğu silin. */
+.flex-1 {
+  flex: 1 1 auto;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-end {
+  text-align: right;
+}
+
+/* PrimeNG tablolarında uzun metinlerin satırı bozmaması için */
+.p-datatable .p-datatable-tbody > tr > td {
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------------
+   Ortak kart dili — her sayfa aynı yüzeyi kullansın diye global
+   ------------------------------------------------------------------ */
+.app-card {
+  padding: 16px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 12px;
+  background: var(--p-content-background);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+}
+
+.app-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.app-card__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.app-card__hint {
+  font-size: 11px;
+  color: var(--p-text-muted-color);
+}
+
+/* ------------------------------------------------------------------
+   Düğme dili
+   ------------------------------------------------------------------
+   PrimeNG'nin p-button'ı yerine kendi düğmemiz: yönetim ekranlarının
+   tamamı aynı ölçü ve tonu paylaşsın, tema token'larına bağlı kalsın diye.
+   Global çünkü her özellik klasöründe tekrar tanımlanmamalı. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--p-text-color);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.14s, border-color 0.14s, filter 0.14s, opacity 0.14s;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--app-brand);
+  outline-offset: 1px;
+}
+
+.btn i {
+  font-size: 12px;
+}
+
+.btn--primary {
+  background: var(--app-brand);
+  color: var(--app-brand-contrast);
+}
+
+.btn--primary:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.btn--ghost {
+  border-color: var(--p-content-border-color);
+  color: var(--p-text-color);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--p-content-hover-background);
+}
+
+.btn--danger {
+  border-color: color-mix(in srgb, #dc2626 45%, transparent);
+  color: #dc2626;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, #dc2626 12%, transparent);
+}
+
+/* Yönetim ekranlarındaki bilgi/uyarı şeridi (p-message govdesine biner). */
+.admin-banner {
+  display: block;
+  margin-bottom: 14px;
+}
+
+/* p-select'in styleClass'ı PrimeNG'nin kendi elemanına bindiği için global. */
+.detail__select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.form__select {
+  width: 100%;
+}
+
+/* Üye ekleme satırındaki seçiciler. */
+.members__select {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+/* Kapsam bölümlerindeki küçük kaydet düğmesi. */
+.btn--sm {
+  padding: 5px 11px;
+  font-size: 11.5px;
+}
+
+/* Diyalog gövdesinde fazladan üst boşluk olmasın. */
+.app-dialog .p-dialog-content {
+  padding-top: 12px;
+}
+
+/* ------------------------------------------------------------------
+   Üst bardaki hızlı arama sonuç paneli
+   ------------------------------------------------------------------
+   Bileşen stili bütçesi (4 kB) aşılmasın diye burada; sağa hizalı çünkü
+   arama kutusu barın sağ ucunda. */
+.search-results {
+  position: absolute;
+  z-index: 1200;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  top: calc(100% + 6px);
+  width: 340px;
+  max-height: 320px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-overlay-popover-background);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 22%);
+}
+
+.search-results__group {
+  margin: 2px 0 4px;
+  padding-inline: 10px;
+  color: var(--p-text-muted-color);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.search-results__item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--p-text-color);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.search-results__item:hover {
+  background: var(--p-content-hover-background);
+}
+
+.search-results__item small {
+  margin-inline-start: auto;
+  color: var(--p-text-muted-color);
+  font-size: 11px;
+}
+
+.search-results__empty {
+  margin: 0;
+  padding: 10px;
+  color: var(--p-text-muted-color);
+  font-size: 13px;
+}
+
+/* ------------------------------------------------------------------
+   Üst bardaki açılır paneller (bildirim / kullanıcı)
+   ------------------------------------------------------------------
+   p-popover içeriği <body>'ye taşındığı için bu stiller GLOBAL olmak
+   zorunda; bileşene kapsüllenirse eşleşmez. */
+.app-popover .p-popover-content {
+  padding: 0;
+}
+
+.panel {
+  width: 320px;
+  max-width: calc(100vw - 24px);
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.panel__title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.panel__action {
+  border: 0;
+  background: transparent;
+  color: var(--p-primary-color);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.panel__action:hover {
+  text-decoration: underline;
+}
+
+/* --- Bildirimler --- */
+.notif {
+  margin: 0;
+  padding: 4px;
+  max-height: 340px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.notif__item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.notif__item:hover {
+  background: var(--p-content-hover-background);
+}
+
+.notif__item--unread {
+  background: color-mix(in srgb, var(--app-brand) 9%, transparent);
+}
+
+.notif__dot {
+  flex: 0 0 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--p-text-muted-color);
+}
+
+.notif__dot--info {
+  background: #3b82f6;
+}
+.notif__dot--success {
+  background: #16a34a;
+}
+.notif__dot--warn {
+  background: #f59e0b;
+}
+.notif__dot--danger {
+  background: #dc2626;
+}
+
+.notif__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notif__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.notif__detail {
+  font-size: 12px;
+  color: var(--p-text-muted-color);
+}
+
+.notif__time {
+  font-size: 11px;
+  color: var(--p-text-muted-color);
+  opacity: 0.8;
+}
+
+.notif__empty {
+  padding: 16px;
+  color: var(--p-text-muted-color);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* --- Kullanıcı paneli --- */
+.panel--user {
+  width: 300px;
+}
+
+.user-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.user-panel__identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-panel__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.user-panel__title,
+.user-panel__mail {
+  font-size: 11.5px;
+  color: var(--p-text-muted-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-panel__facts {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--p-content-border-color);
+  font-size: 12px;
+}
+
+.user-panel__facts > div {
+  display: flex;
+  gap: 8px;
+}
+
+.user-panel__facts dt {
+  flex: 0 0 74px;
+  color: var(--p-text-muted-color);
+}
+
+.user-panel__facts dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--p-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-panel__menu {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+
+.user-panel__menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--p-text-color);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.user-panel__menu a:hover {
+  background: var(--p-content-hover-background);
+}
+
+.user-panel__menu i {
+  width: 16px;
+  color: var(--p-text-muted-color);
+}
+
+.user-panel__signout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px;
+  border: 0;
+  border-top: 1px solid var(--p-content-border-color);
+  border-radius: 0 0 var(--p-overlay-popover-border-radius, 10px)
+    var(--p-overlay-popover-border-radius, 10px);
+  background: transparent;
+  color: #dc2626;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.user-panel__signout:hover {
+  background: color-mix(in srgb, #dc2626 10%, transparent);
+}

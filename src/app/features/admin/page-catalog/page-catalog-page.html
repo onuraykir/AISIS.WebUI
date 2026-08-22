@@ -1,0 +1,359 @@
+<app-admin-toolbar
+  title="Sayfa Kataloğu"
+  description="Sistemdeki tüm ekranlar. Sayfa önce katalogda oluşur, sonra bir modüle yerleştirilir. Havuzdaki sayfa menüde görünmez ve yetkilendirilemez."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button type="button" class="btn btn--primary" *appHasAction="'CREATE'; operation: 'PAGE'" (click)="openCreate()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Sayfa
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.total() }}</span>
+      <span class="stats__label">sayfa</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.placedCount() }}</span>
+      <span class="stats__label">yerleşik</span>
+    </div>
+    <div class="stats__item" [class.stats__item--attention]="store.poolCount() > 0">
+      <span class="stats__value">{{ store.poolCount() }}</span>
+      <span class="stats__label">havuzda</span>
+    </div>
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Sayfa kataloğu yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board">
+    <!-- ── Liste ── -->
+    <section class="app-card board__list" aria-label="Sayfa listesi">
+      <header class="filters">
+        <div class="filters__chips" role="group" aria-label="Süzgeç">
+          @for (option of filterOptions; track option.value) {
+            <button
+              type="button"
+              class="chip"
+              [class.chip--active]="store.filter() === option.value"
+              (click)="setFilter(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          }
+        </div>
+
+        <p-iconfield class="filters__search">
+          <p-inputicon class="pi pi-search" />
+          <input
+            pInputText
+            type="text"
+            placeholder="Ad veya adres ara…"
+            aria-label="Sayfa ara"
+            [value]="store.search()"
+            (input)="onSearch($event)"
+          />
+        </p-iconfield>
+      </header>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4, 5, 6, 7]; track row) {
+            <p-skeleton height="42px" />
+          }
+        </div>
+      } @else if (store.isEmpty()) {
+        <div class="state state--inline">
+          <i class="pi pi-inbox state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Sonuç yok</h3>
+          <p class="state__text">Süzgeci değiştirin veya yeni bir sayfa ekleyin.</p>
+        </div>
+      } @else {
+        @for (group of store.groups(); track group.key) {
+          <section class="group">
+            <h3 class="group__title" [class.group__title--pool]="group.isPool">
+              @if (group.isPool) {
+                <i class="pi pi-inbox" aria-hidden="true"></i>
+              } @else {
+                <i class="pi pi-folder" aria-hidden="true"></i>
+              }
+              {{ group.label }}
+              <span class="group__count">{{ group.pages.length }}</span>
+            </h3>
+
+            <ul class="rows">
+              @for (page of group.pages; track page.id) {
+                <li>
+                  <div
+                    class="row"
+                    [class.row--selected]="selected()?.id === page.id"
+                    [class.row--passive]="!page.isActive"
+                  >
+                    <button type="button" class="row__main" (click)="select(page)">
+                      <i class="row__icon {{ page.icon || 'pi pi-file' }}" aria-hidden="true"></i>
+
+                      <span class="row__text">
+                        <span class="row__name">{{ page.name }}</span>
+                        <code class="row__route">{{ page.route }}</code>
+                      </span>
+
+                      <span class="row__meta">
+                        <span
+                          class="row__badge"
+                          [class.row__badge--empty]="page.operationCount === 0"
+                          pTooltip="İş fonksiyonu sayısı"
+                          tooltipPosition="top"
+                        >
+                          {{ page.operationCount }} işlem
+                        </span>
+
+                        <span
+                          class="row__badge"
+                          [class.row__badge--empty]="page.actionCount === 0"
+                          pTooltip="Yetkilendirilebilir eylem sayısı"
+                          tooltipPosition="top"
+                        >
+                          {{ page.actionCount }} eylem
+                        </span>
+
+                        @if (page.unmappedActionCount > 0) {
+                          <span
+                            class="row__badge row__badge--warn"
+                            pTooltip="Uç noktası olmayan eylem — salt görünürlük yetkisi ya da ucu henüz yazılmamış"
+                            tooltipPosition="top"
+                          >
+                            {{ page.unmappedActionCount }} uçsuz
+                          </span>
+                        }
+
+                        @if (page.grantCount > 0) {
+                          <span
+                            class="row__badge row__badge--granted"
+                            pTooltip="Rollere verilmiş yetki sayısı — silme ve havuza alma engeli"
+                            tooltipPosition="top"
+                          >
+                            {{ page.grantCount }} yetki
+                          </span>
+                        }
+
+                        @if (!page.isActive) {
+                          <span class="row__badge row__badge--passive">Pasif</span>
+                        }
+                      </span>
+                    </button>
+
+                    <div class="row__actions">
+                      <button
+                        type="button"
+                        class="row__action"
+                        pTooltip="Düzenle"
+                        tooltipPosition="top"
+                        aria-label="Düzenle"
+                        [disabled]="store.saving()"
+                        (click)="openEdit(page)"
+                      >
+                        <i class="pi pi-pencil"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="row__action row__action--danger"
+                        pTooltip="Sil"
+                        tooltipPosition="top"
+                        aria-label="Sil"
+                        [disabled]="store.saving()"
+                        (click)="confirmDelete(page)"
+                      >
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      }
+    </section>
+
+    <!-- ── Seçili sayfa ── -->
+    <aside class="app-card board__detail" aria-label="Seçili sayfa">
+      @if (selected(); as page) {
+        <header class="detail__head">
+          <span class="detail__icon"><i class="{{ page.icon || 'pi pi-file' }}" aria-hidden="true"></i></span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ page.name }}</h3>
+            <code class="detail__route">{{ page.route }}</code>
+          </div>
+        </header>
+
+        @if (page.description) {
+          <p class="detail__description">{{ page.description }}</p>
+        }
+
+        <dl class="detail__facts">
+          <div>
+            <dt>Modül</dt>
+            <dd>{{ page.moduleName ?? 'Havuzda' }}</dd>
+          </div>
+          <div>
+            <dt>Ana modül</dt>
+            <dd>{{ page.rootModuleName ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>İşlem / eylem</dt>
+            <dd>{{ page.operationCount }} / {{ page.actionCount }}</dd>
+          </div>
+          <div>
+            <dt>Verilmiş yetki</dt>
+            <dd>{{ page.grantCount }}</dd>
+          </div>
+        </dl>
+
+        @if (!page.isPlaced) {
+          <p class="detail__note detail__note--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Bu sayfa havuzda: menüde görünmez ve rollere yetki verilemez.
+          </p>
+        }
+
+        <!-- İşlem → eylem ağacı: yetkinin birimi en alttaki eylemdir; yönetici
+             hangi adresin arkasında durduğunu burada görür. -->
+        <section class="detail__section">
+          <h4 class="detail__section-title">İşlemler ve eylemleri</h4>
+
+          @for (operation of page.operations; track operation.id) {
+            <div class="ops__item" [class.ops__item--passive]="!operation.isActive">
+              <h5 class="ops__name">
+                <i class="pi pi-bolt" aria-hidden="true"></i>
+                {{ operation.name }}
+                <code>{{ operation.code }}</code>
+              </h5>
+
+              <ul class="ops__actions">
+                @for (action of operation.actions; track action.id) {
+                  <li class="ops__action">
+                    <span class="ops__action-name">{{ action.actionName }}</span>
+
+                    <span class="method {{ methodClass(action) }}">
+                      {{ methodLabel(action) }}
+                    </span>
+
+                    @if (action.endpoint) {
+                      <code class="ops__endpoint" [pTooltip]="action.endpoint" tooltipPosition="top">
+                        {{ action.endpoint }}
+                      </code>
+                    }
+                  </li>
+                }
+              </ul>
+            </div>
+          } @empty {
+            <p class="detail__note detail__note--warn">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              Bu sayfada işlem yok: menüde görünmez ve yetkilendirilemez.
+              İşlem Kataloğu ekranından tanımlayın.
+            </p>
+          }
+        </section>
+
+        <section class="detail__section">
+          <h4 class="detail__section-title">Yerleştirme</h4>
+
+          <div class="detail__move">
+            <p-select
+              [options]="placementOptions()"
+              optionLabel="label"
+              optionValue="id"
+              [ngModel]="placementTarget()"
+              (ngModelChange)="placementTarget.set($event)"
+              [disabled]="store.saving()"
+              placeholder="Modül seçin"
+              class="detail__select"
+              appendTo="body"
+            />
+
+            <button
+              type="button"
+              class="btn btn--ghost"
+              *appHasAction="'ASSIGN'; operation: 'PAGE_LAYOUT'"
+              [disabled]="store.saving() || !placementChanged() || !!unplaceBlockedReason()"
+              (click)="applyPlacement()"
+            >
+              Uygula
+            </button>
+          </div>
+
+          @if (unplaceBlockedReason(); as reason) {
+            <p class="detail__note detail__note--warn">
+              <i class="pi pi-info-circle" aria-hidden="true"></i> {{ reason }}
+            </p>
+          }
+        </section>
+
+        <footer class="detail__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasAction="'UPDATE'; operation: 'PAGE'"
+            [disabled]="store.saving()"
+            (click)="openEdit(page)"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i> Düzenle
+          </button>
+
+          <button
+            type="button"
+            class="btn btn--danger"
+            *appHasAction="'DELETE'; operation: 'PAGE'"
+            [disabled]="store.saving() || !!deleteBlockedReason()"
+            [pTooltip]="deleteBlockedReason() ?? ''"
+            [tooltipDisabled]="!deleteBlockedReason()"
+            tooltipPosition="top"
+            (click)="confirmDelete(page)"
+          >
+            <i class="pi pi-trash" aria-hidden="true"></i> Sil
+          </button>
+        </footer>
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Sayfa seçilmedi</h3>
+          <p class="state__text">
+            Künyesini görmek, modüle yerleştirmek veya düzenlemek için soldan bir sayfa seçin.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<app-page-form-dialog
+  [(visible)]="dialogOpen"
+  [page]="dialogPage()"
+  [moduleOptions]="store.moduleOptions()"
+  [saving]="store.saving()"
+  (save)="onDialogSave($event)"
+/>
+
+<p-confirmdialog />

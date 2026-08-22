@@ -1,0 +1,60 @@
+<section class="app-card home">
+  <img
+    class="home__logo"
+    src="images/cankaya-logo.png"
+    alt="Çankaya Üniversitesi"
+    width="56"
+    height="56"
+  />
+
+  <h2 class="home__title">AISIS</h2>
+  <p class="home__subtitle">Akreditasyon ve Değerlendirme Bilgi Sistemi</p>
+
+  <p class="home__text">
+    Bu ekranın içeriği henüz bağlanmadı. Pano için bir uç nokta yazıldığında buraya
+    gerçek göstergeler gelecek; o zamana kadar sahte sayı gösterilmiyor.
+  </p>
+
+  <!-- Menünün gerçekten API'den gelip gelmediğini görmek geliştirme sırasında işe yarıyor. -->
+  <div class="home__status">
+    @switch (menuStatus()) {
+      @case ('loaded') {
+        <span class="home__badge home__badge--ok">
+          <i class="pi pi-check-circle" aria-hidden="true"></i>
+          Menü API'den geldi — {{ moduleCount() }} modül, {{ pageCount() }} sayfa
+        </span>
+      }
+      @case ('failed') {
+        <span class="home__badge home__badge--error">
+          <i class="pi pi-times-circle" aria-hidden="true"></i>
+          Menü alınamadı: {{ menuError() }}
+        </span>
+      }
+      @default {
+        <span class="home__badge">
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          Menü yükleniyor…
+        </span>
+      }
+    }
+
+    @if (menuStatus() === 'loaded' && menuError()) {
+      <span class="home__badge home__badge--warn">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        {{ menuError() }}
+      </span>
+    }
+  </div>
+
+  @if (menuStatus() === 'failed') {
+    <p class="home__hint">
+      Backend'i <code>https</code> profiliyle başlatın (7034) ve migration'ı uygulayın.
+      Menü gelmeden sol menü boş kalır, sabit sayfalar çalışmaya devam eder.
+    </p>
+  }
+
+  <a class="home__link" routerLink="/sistem/modul-agaci">
+    <i class="pi pi-sitemap" aria-hidden="true"></i>
+    Modül Ağacı'na git
+  </a>
+</section>

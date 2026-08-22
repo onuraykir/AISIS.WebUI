@@ -1,0 +1,59 @@
+<div class="app-card placeholder">
+  <i class="pi pi-wrench placeholder__icon" aria-hidden="true"></i>
+  <h2 class="placeholder__title">Bu ekran henüz hazırlanmadı</h2>
+  <p class="placeholder__text">
+    Şablon çalışır durumda; içerik geliştikçe burası kendi bileşeniyle değiştirilecek.
+  </p>
+  <span class="placeholder__tag">Mock</span>
+</div>
+
+<!-- Yetki zincirinin ucu: menü ucundan gelen işlem → eylem listesi ve ona bağlı
+     düğmeler. Gerçek ekranlar yazılınca bu blok silinecek. -->
+<div class="app-card perms">
+  <header class="app-card__head">
+    <h2 class="app-card__title">Bu sayfadaki yetkileriniz</h2>
+    <span class="app-card__hint">menü ucundan geliyor</span>
+  </header>
+
+  @for (operation of operations(); track operation.code) {
+    <section class="perms__operation">
+      <h3 class="perms__operation-title">
+        {{ operation.name }}
+        <code>{{ operation.code }}</code>
+      </h3>
+
+      <div class="perms__codes">
+        @for (action of operation.actions; track action) {
+          <span class="perms__code">{{ action }}</span>
+        }
+      </div>
+    </section>
+  } @empty {
+    <span class="perms__empty">Bu sayfa için tanımlı işlem yok.</span>
+  }
+
+  <!-- İşlem verilmeden sorulan yetki: "herhangi bir işlemde bu eylem var mı". -->
+  <div class="perms__actions">
+    <button type="button" class="perms__btn" *appHasAction="'CREATE'">
+      <i class="pi pi-plus" aria-hidden="true"></i> Yeni Kayıt
+    </button>
+    <button type="button" class="perms__btn" *appHasAction="'UPDATE'">
+      <i class="pi pi-pencil" aria-hidden="true"></i> Düzenle
+    </button>
+    <button type="button" class="perms__btn perms__btn--danger" *appHasAction="'DELETE'">
+      <i class="pi pi-trash" aria-hidden="true"></i> Sil
+    </button>
+    <button type="button" class="perms__btn" *appHasAction="'IMPORT'">
+      <i class="pi pi-upload" aria-hidden="true"></i> İçe Aktar
+    </button>
+    <button type="button" class="perms__btn" *appHasAction="'EXPORT'">
+      <i class="pi pi-download" aria-hidden="true"></i> Dışa Aktar
+    </button>
+    <button type="button" class="perms__btn" *appHasAction="'APPROVE'">
+      <i class="pi pi-check" aria-hidden="true"></i> Onayla
+    </button>
+    <button type="button" class="perms__btn" *appHasAction="'PRINT'">
+      <i class="pi pi-print" aria-hidden="true"></i> Yazdır
+    </button>
+  </div>
+</div>

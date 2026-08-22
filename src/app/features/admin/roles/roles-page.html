@@ -1,0 +1,331 @@
+<app-admin-toolbar
+  title="Roller"
+  description="Rol, sayfa + işlem çiftlerine izin verir. Kullanıcı grubunun modül kapsamıyla kesişerek etkin yetkiyi oluşturur — rol izin verse de sayfa grubun kapsamında değilse görünmez."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button type="button" class="btn btn--primary" *appHasAction="'CREATE'; operation: 'ROLE'" (click)="openCreate()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Rol
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.roles().length }}</span>
+      <span class="stats__label">rol</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.grantTotal() }}</span>
+      <span class="stats__label">verilmiş yetki</span>
+    </div>
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Roller yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board board--roles">
+    <!-- ── Roller ── -->
+    <section class="app-card roles" aria-label="Roller">
+      <h3 class="pane__title"><i class="pi pi-shield" aria-hidden="true"></i> Roller</h3>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4]; track row) {
+            <p-skeleton height="44px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (role of store.roles(); track role.id) {
+            <li>
+              <div class="row" [class.row--selected]="store.selectedRoleId() === role.id">
+                <button type="button" class="row__main" (click)="selectRole(role)">
+                  <i class="row__icon pi pi-shield" aria-hidden="true"></i>
+                  <span class="row__text">
+                    <span class="row__name">{{ role.name }}</span>
+                    <span class="row__sub">
+                      {{ role.permissionCount }} yetki
+                      @if (role.groupCount > 0) {
+                        · {{ role.groupCount }} grup
+                      }
+                    </span>
+                  </span>
+                </button>
+
+                <div class="row__actions">
+                  <button
+                    type="button"
+                    class="row__action"
+                    pTooltip="Yeniden adlandır"
+                    tooltipPosition="top"
+                    aria-label="Yeniden adlandır"
+                    [disabled]="store.saving()"
+                    (click)="openEdit(role)"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    [pTooltip]="deleteBlockedReason(role) ?? 'Sil'"
+                    tooltipPosition="top"
+                    aria-label="Sil"
+                    [disabled]="store.saving() || !!deleteBlockedReason(role)"
+                    (click)="confirmDelete(role)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-shield state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">Rol yok</h3>
+              <p class="state__text">Yetki verebilmek için önce bir rol oluşturun.</p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Yetki matrisi ── -->
+    <section class="app-card matrix" aria-label="Yetki matrisi">
+      @if (store.matrix(); as matrix) {
+        <header class="matrix__head">
+          <div class="matrix__title">
+            <h3 class="pane__title matrix__pane-title">
+              <i class="pi pi-table" aria-hidden="true"></i> Yetki Matrisi
+            </h3>
+            <span class="matrix__role">{{ matrix.roleName }}</span>
+          </div>
+
+          <p-iconfield class="matrix__search">
+            <p-inputicon class="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              placeholder="Sayfa, adres veya modül ara…"
+              aria-label="Matriste ara"
+              [value]="search()"
+              (input)="onSearch($event)"
+            />
+          </p-iconfield>
+        </header>
+
+        <div class="matrix__bar">
+          <div class="matrix__bulk">
+            <button
+              type="button"
+              class="linkbtn"
+              [disabled]="store.saving()"
+              (click)="store.selectAll()"
+            >
+              Tümünü seç
+            </button>
+            <span class="matrix__sep">·</span>
+            <button
+              type="button"
+              class="linkbtn"
+              [disabled]="store.saving()"
+              (click)="store.clearAll()"
+            >
+              Temizle
+            </button>
+          </div>
+
+          <div class="matrix__save">
+            @if (store.isDirty()) {
+              <span class="matrix__pending">
+                <i class="pi pi-pencil" aria-hidden="true"></i>
+                {{ store.pendingChanges().added }} eklendi ·
+                {{ store.pendingChanges().removed }} kaldırıldı
+              </span>
+
+              <button
+                type="button"
+                class="btn btn--ghost"
+                [disabled]="store.saving()"
+                (click)="store.revert()"
+              >
+                Geri al
+              </button>
+            } @else {
+              <span class="matrix__pending matrix__pending--clean">
+                <i class="pi pi-check" aria-hidden="true"></i>
+                {{ store.draftCount() }} yetki · kayıtlı
+              </span>
+            }
+
+            <button
+              type="button"
+              class="btn btn--primary"
+              *appHasAction="'ASSIGN'; operation: 'PERMISSION'"
+              [disabled]="store.saving() || !store.isDirty()"
+              (click)="save()"
+            >
+              @if (store.saving()) {
+                <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              }
+              Kaydet
+            </button>
+          </div>
+        </div>
+
+        @if (store.matrixLoading()) {
+          <div class="skeletons">
+            @for (row of [1, 2, 3, 4, 5]; track row) {
+              <p-skeleton height="46px" />
+            }
+          </div>
+        } @else if (matrixEmpty()) {
+          <div class="state state--inline">
+            <i class="pi pi-search state__icon" aria-hidden="true"></i>
+            <h3 class="state__title">Eşleşen sayfa yok</h3>
+            <p class="state__text">
+              Aramayı değiştirin. Matriste yalnızca bir modüle yerleştirilmiş sayfalar bulunur.
+            </p>
+          </div>
+        } @else {
+          @for (group of groups(); track group.label) {
+            <section class="mgroup">
+              <h4 class="mgroup__title">
+                <button
+                  type="button"
+                  class="mgroup__toggle"
+                  [class.mgroup__toggle--on]="groupAllGranted(group.pages)"
+                  [attr.aria-label]="group.label + ' — tümünü değiştir'"
+                  [disabled]="store.saving()"
+                  (click)="toggleGroup(group.pages)"
+                >
+                  <i class="pi" [class.pi-check]="groupAllGranted(group.pages)"></i>
+                </button>
+                {{ group.label }}
+              </h4>
+
+              @for (page of group.pages; track page.pageId) {
+                <article class="mpage">
+                  <button
+                    type="button"
+                    class="mpage__head"
+                    [disabled]="store.saving()"
+                    (click)="togglePage(page)"
+                  >
+                    <span
+                      class="mcheck"
+                      [class.mcheck--on]="pageAllGranted(page)"
+                      [class.mcheck--partial]="!pageAllGranted(page) && pageSomeGranted(page)"
+                    >
+                      <i class="pi" [class.pi-check]="pageAllGranted(page)"></i>
+                    </span>
+
+                    <span class="mpage__name">{{ page.pageName }}</span>
+                    <code class="mpage__route">{{ page.route }}</code>
+                  </button>
+
+                  @for (operation of page.operations; track operation.operationId) {
+                    <div class="mop">
+                      <button
+                        type="button"
+                        class="mop__head"
+                        [disabled]="store.saving()"
+                        (click)="toggleOperation(operation)"
+                      >
+                        <span
+                          class="mcheck"
+                          [class.mcheck--on]="operationAllGranted(operation)"
+                          [class.mcheck--partial]="
+                            !operationAllGranted(operation) && operationSomeGranted(operation)
+                          "
+                        >
+                          <i class="pi" [class.pi-check]="operationAllGranted(operation)"></i>
+                        </span>
+
+                        <span class="mop__name">{{ operation.name }}</span>
+                        <code class="row__code">{{ operation.code }}</code>
+                        <span class="mop__state">{{ operationState(operation) }}</span>
+                      </button>
+
+                      <!-- Yetki kutucuğu her eylemde ayrı: uç noktası olmayanlar
+                           (UNAVAILABLE) da seçilebilir; salt görünürlük yetkileri böyledir. -->
+                      <div class="macts">
+                        @for (action of operation.actions; track action.operationActionId) {
+                          <button
+                            type="button"
+                            class="mact"
+                            [class.mact--on]="store.isGranted(action.operationActionId)"
+                            [attr.aria-pressed]="store.isGranted(action.operationActionId)"
+                            [pTooltip]="action.endpoint ?? 'Uç noktası yok — adres eşleştirmesine girmez'"
+                            tooltipPosition="top"
+                            [disabled]="store.saving()"
+                            (click)="store.toggle(action.operationActionId)"
+                          >
+                            <span
+                              class="mcheck mcheck--sm"
+                              [class.mcheck--on]="store.isGranted(action.operationActionId)"
+                            >
+                              <i class="pi" [class.pi-check]="store.isGranted(action.operationActionId)"></i>
+                            </span>
+
+                            <span class="mact__name">{{ action.name }}</span>
+
+                            <span class="method {{ methodClass(action.httpMethod) }}">
+                              {{ methodLabel(action.httpMethod) }}
+                            </span>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                </article>
+              }
+            </section>
+          }
+        }
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Rol seçilmedi</h3>
+          <p class="state__text">
+            Yetkilerini düzenlemek için soldan bir rol seçin. Matriste yalnızca bir modüle
+            yerleştirilmiş sayfalar görünür.
+          </p>
+        </div>
+      }
+    </section>
+  </div>
+}
+
+<app-name-dialog
+  [(visible)]="dialogOpen"
+  [heading]="roleInDialog() ? 'Rolü Yeniden Adlandır' : 'Yeni Rol'"
+  label="Rol adı"
+  placeholder="Akreditasyon Sorumlusu"
+  hint="Yetkiler bu diyalogda değil, sağdaki matriste verilir."
+  [value]="roleInDialog()?.name ?? ''"
+  [submitLabel]="roleInDialog() ? 'Kaydet' : 'Oluştur'"
+  [saving]="store.saving()"
+  (save)="onDialogSave($event)"
+/>
+
+<p-confirmdialog />

@@ -8,19 +8,58 @@
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+
+    /* Dizi/sozluk erisimini T yerine T | undefined yapar.
+       ornek[1] gibi kontrolsuz indeks erisimlerini derleme zamaninda yakalar. */
+    "noUncheckedIndexedAccess": true,
+
     "skipLibCheck": true,
     "isolatedModules": true,
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+
+    /* Klasor takma adlari: ../../../ zincirlerini onler ve dosya tasindiginda
+       import'lar bozulmaz. baseUrl'e gerek yok; yollar bu dosyaya gore cozulur. */
+    "paths": {
+      "@core/*": ["./src/app/core/*"],
+      "@shared/*": ["./src/app/shared/*"],
+      "@features/*": ["./src/app/features/*"],
+      "@layout/*": ["./src/app/layout/*"],
+      "@env/*": ["./src/environments/*"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "typeCheckHostBindings": true,
-    "strictTemplates": true
+    "strictTemplates": true,
+
+    /* standalone: false yazilmasini engeller; NgModule'e geri donusu kapatir. */
+    "strictStandalone": true,
+
+    /* Sablon uyarilarinin bir kismini hataya yukseltir.
+       defaultCategory bilerek "warning": ileride Angular yeni check eklerse
+       derleme aniden kirilmaz, sadece uyari verir. */
+    "extendedDiagnostics": {
+      "defaultCategory": "warning",
+      "checks": {
+        /* {{ sayac }} yerine {{ sayac() }} unutmak - zoneless projede en sik hata */
+        "interpolatedSignalNotInvoked": "error",
+        /* [(ngModel)] yerine ([ngModel]) yazimi */
+        "invalidBananaInBox": "error",
+        /* @if / @for kullanilmadan *ngIf yazip import etmeyi unutmak */
+        "missingControlFlowDirective": "error",
+        /* (click)="fn" yazip (click)="fn()" demeyi unutmak */
+        "uninvokedFunctionInEventBinding": "error",
+        /* null olamayacak bir ifadede ?? kullanmak */
+        "nullishCoalescingNotNullable": "error",
+        /* imports dizisinde kullanilmayan bilesen birakmak */
+        "unusedStandaloneImports": "error"
+      }
+    }
   },
   "files": [],
   "references": [

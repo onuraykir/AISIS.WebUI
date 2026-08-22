@@ -1,0 +1,74 @@
+:host {
+  display: block;
+}
+
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 24px;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--app-brand) 12%, transparent), transparent),
+    var(--app-chrome-bg);
+}
+
+.login__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(380px, 100%);
+  padding: 36px 28px 30px;
+  border: 1px solid var(--app-chrome-border);
+  border-radius: 16px;
+  background: var(--app-chrome-bg-elevated);
+  color: var(--app-chrome-text);
+  text-align: center;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 45%);
+}
+
+.login__logo {
+  margin-bottom: 6px;
+}
+
+.login__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.login__subtitle {
+  margin: 0;
+  color: var(--app-chrome-text-muted);
+  font-size: 13px;
+}
+
+.login__note {
+  margin: 14px 0 4px;
+  color: var(--app-chrome-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.login__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--app-brand);
+  color: var(--app-brand-contrast);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.login__button:hover {
+  filter: brightness(0.94);
+}

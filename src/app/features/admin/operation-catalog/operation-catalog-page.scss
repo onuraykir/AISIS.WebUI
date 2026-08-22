@@ -1,0 +1,262 @@
+/* Ortak yerleşim (stats, board, row, state, detail, method rozetleri)
+   src/styles/_admin.scss içinde. Burada yalnızca İşlem Kataloğu'na özgü olanlar var. */
+
+/* Sağ bölme geniş: asıl iş orada, sayfa listesi yalnızca gezinme. */
+.board--operations {
+  grid-template-columns: 320px minmax(0, 1fr);
+}
+
+@media (max-width: 1100px) {
+  .board--operations {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pages,
+.detail {
+  padding: 14px;
+  min-height: 340px;
+}
+
+/* Üst çubuktaki "Eylem Sözlüğü" düğmesindeki sayı. */
+.btn__count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--p-content-hover-background);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* --- Süzgeç şeridi (Sayfa Kataloğu ile aynı dil) --- */
+.filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 2px 2px 12px;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.filters__chips {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 9px;
+}
+
+.chip {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--p-text-muted-color);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.chip:hover {
+  color: var(--p-text-color);
+}
+
+.chip--active {
+  background: var(--app-brand);
+  color: var(--app-brand-contrast);
+}
+
+.filters__search {
+  flex: 1 1 160px;
+}
+
+.filters__search input {
+  width: 100%;
+}
+
+/* --- Sayfa grupları --- */
+.group + .group {
+  margin-top: 6px;
+}
+
+.group__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 12px 8px 7px;
+  background: var(--p-content-background);
+  color: var(--p-text-muted-color);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.group__title i {
+  font-size: 11px;
+}
+
+.group__title--pool {
+  color: var(--p-text-color);
+}
+
+.group__title--pool i {
+  padding: 3px;
+  border-radius: 4px;
+  background: var(--app-brand);
+  color: var(--app-brand-contrast);
+  font-size: 9px;
+}
+
+.group__count {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--p-content-hover-background);
+  font-size: 10.5px;
+  letter-spacing: 0;
+}
+
+.row__route {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--p-text-muted-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* İşlemi olmayan sayfa yetkilendirilemez — sessizce geçilmesin. */
+.row__badge--warn {
+  background: color-mix(in srgb, #f59e0b 16%, transparent);
+  color: #b45309;
+}
+
+.row__badge--granted {
+  background: color-mix(in srgb, #16a34a 14%, transparent);
+  color: #15803d;
+}
+
+/* --- Sağ bölme başlığı --- */
+.detail__head {
+  gap: 12px;
+}
+
+.detail__head .btn {
+  margin-inline-start: auto;
+  flex: 0 0 auto;
+}
+
+/* --- İşlem kartı ---
+   Her işlem kendi kutusunda: eylemleri ve havuzu birlikte okunsun,
+   iki işlem birbirine karışmasın. */
+.op {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 12px;
+}
+
+.op--passive {
+  opacity: 0.65;
+}
+
+.op__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--p-content-border-color);
+}
+
+.op__identity {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.op__name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.op__description {
+  margin: 3px 0 0;
+  color: var(--p-text-muted-color);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.op__meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+
+/* İşlem başlığındaki eylemler her zaman görünür: kart hover'ına bağlı değil. */
+.op__actions {
+  opacity: 1;
+}
+
+.op__list {
+  margin-top: 4px;
+}
+
+.op__empty {
+  padding: 10px 8px;
+  color: var(--p-text-muted-color);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* --- Bağlanabilir eylem havuzu --- */
+.pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 2px 2px;
+  border-top: 1px dashed var(--p-content-border-color);
+}
+
+.pool__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px dashed var(--p-content-border-color);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--p-text-muted-color);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background-color 0.12s;
+}
+
+.pool__chip:hover:not(:disabled) {
+  border-style: solid;
+  border-color: var(--app-brand);
+  background: color-mix(in srgb, var(--app-brand) 14%, transparent);
+  color: var(--p-text-color);
+}
+
+.pool__chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pool__chip i {
+  font-size: 9px;
+}

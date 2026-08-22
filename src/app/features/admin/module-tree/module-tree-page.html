@@ -1,0 +1,231 @@
+<app-admin-toolbar
+  title="Modül Ağacı"
+  description="Menünün klasör yapısı. Ana modüller kullanıcı gruplarına bağlanır; sayfalar bu modüllerin altına yerleştirilir. Ağaç en fazla iki seviyelidir."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button type="button" class="btn btn--primary" *appHasAction="'CREATE'; operation: 'MODULE'" (click)="openCreateRoot()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Ana Modül
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.rootCount() }}</span>
+      <span class="stats__label">ana modül</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.totalCount() }}</span>
+      <span class="stats__label">toplam modül</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.pageTotal() }}</span>
+      <span class="stats__label">yerleştirilmiş sayfa</span>
+    </div>
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Modül ağacı yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board">
+    <!-- ── Ağaç ── -->
+    <section class="app-card board__tree" aria-label="Modül ağacı">
+      @if (store.loading()) {
+        <div class="skeletons skeletons--tree">
+          @for (row of [1, 2, 3, 4, 5, 6]; track row) {
+            <p-skeleton height="38px" />
+          }
+        </div>
+      } @else if (store.isEmpty()) {
+        <div class="state state--inline">
+          <i class="pi pi-sitemap state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Henüz modül yok</h3>
+          <p class="state__text">İlk ana modülü ekleyerek menüyü kurmaya başlayın.</p>
+          <button type="button" class="btn btn--primary" (click)="openCreateRoot()">
+            <i class="pi pi-plus" aria-hidden="true"></i> Ana Modül Ekle
+          </button>
+        </div>
+      } @else {
+        <ul class="tree">
+          @for (root of store.tree(); track root.id) {
+            <li class="tree__item">
+              <app-module-node-row
+                [node]="root"
+                [selected]="selected()?.id === root.id"
+                [expanded]="isExpanded(root)"
+                [canMoveUp]="canMoveUp(root)"
+                [canMoveDown]="canMoveDown(root)"
+                [busy]="store.saving()"
+                (toggle)="toggle(root)"
+                (select)="select(root)"
+                (addChild)="openCreateChild(root)"
+                (moveUp)="shiftUp(root)"
+                (moveDown)="shiftDown(root)"
+                (edit)="openEdit(root)"
+                (remove)="confirmDelete(root)"
+              />
+
+              @if (isExpanded(root)) {
+                <ul class="tree tree--nested">
+                  @for (sub of root.subModules; track sub.id) {
+                    <li class="tree__item">
+                      <app-module-node-row
+                        [node]="sub"
+                        [selected]="selected()?.id === sub.id"
+                        [canMoveUp]="canMoveUp(sub)"
+                        [canMoveDown]="canMoveDown(sub)"
+                        [busy]="store.saving()"
+                        (select)="select(sub)"
+                        (moveUp)="shiftUp(sub)"
+                        (moveDown)="shiftDown(sub)"
+                        (edit)="openEdit(sub)"
+                        (remove)="confirmDelete(sub)"
+                      />
+                    </li>
+                  } @empty {
+                    <li class="tree__hint">
+                      Alt modül yok — satırdaki <i class="pi pi-plus" aria-hidden="true"></i> ile ekleyebilirsiniz.
+                    </li>
+                  }
+                </ul>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Seçili modül ── -->
+    <aside class="app-card board__detail" aria-label="Seçili modül">
+      @if (selected(); as node) {
+        <header class="detail__head">
+          <span class="detail__icon"><i class="{{ node.icon || 'pi pi-folder' }}" aria-hidden="true"></i></span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ node.name }}</h3>
+            <code class="detail__code">{{ node.code }}</code>
+          </div>
+        </header>
+
+        @if (node.description) {
+          <p class="detail__description">{{ node.description }}</p>
+        }
+
+        <dl class="detail__facts">
+          <div>
+            <dt>Seviye</dt>
+            <dd>{{ node.level === 0 ? 'Ana modül' : 'Alt modül' }}</dd>
+          </div>
+          <div>
+            <dt>Sıra</dt>
+            <dd>{{ node.displayOrder }}</dd>
+          </div>
+          <div>
+            <dt>Sayfa</dt>
+            <dd>{{ node.pageCount }}</dd>
+          </div>
+          <div>
+            <dt>Durum</dt>
+            <dd [class.detail__passive]="!node.isActive">{{ node.isActive ? 'Aktif' : 'Pasif' }}</dd>
+          </div>
+        </dl>
+
+        <!-- Konum -->
+        <section class="detail__section">
+          <h4 class="detail__section-title">Konum</h4>
+
+          <div class="detail__move">
+            <p-select
+              [options]="moveOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="moveTarget()"
+              (ngModelChange)="moveTarget.set($event)"
+              [disabled]="store.saving() || node.subModules.length > 0"
+              placeholder="Konum seçin"
+              class="detail__select"
+              appendTo="body"
+            />
+
+            <button
+              type="button"
+              class="btn btn--ghost"
+              [disabled]="store.saving() || moveTarget() === node.parentModuleId || !!moveBlockedReason()"
+              (click)="applyMove()"
+            >
+              Taşı
+            </button>
+          </div>
+
+          @if (moveBlockedReason(); as reason) {
+            <p class="detail__note detail__note--warn">
+              <i class="pi pi-info-circle" aria-hidden="true"></i> {{ reason }}
+            </p>
+          }
+        </section>
+
+        <!-- Eylemler -->
+        <footer class="detail__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasAction="'UPDATE'; operation: 'MODULE'"
+            [disabled]="store.saving()"
+            (click)="openEdit(node)"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i> Düzenle
+          </button>
+
+          <button
+            type="button"
+            class="btn btn--danger"
+            *appHasAction="'DELETE'; operation: 'MODULE'"
+            [disabled]="store.saving() || !!deleteBlockedReason()"
+            [pTooltip]="deleteBlockedReason() ?? ''"
+            [tooltipDisabled]="!deleteBlockedReason()"
+            tooltipPosition="top"
+            (click)="confirmDelete(node)"
+          >
+            <i class="pi pi-trash" aria-hidden="true"></i> Sil
+          </button>
+        </footer>
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Modül seçilmedi</h3>
+          <p class="state__text">
+            Künyesini görmek, konumunu değiştirmek veya düzenlemek için soldan bir modül seçin.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<app-module-form-dialog
+  [(visible)]="dialogOpen"
+  [module]="dialogModule()"
+  [parentName]="dialogParent()?.name ?? null"
+  [saving]="store.saving()"
+  (save)="onDialogSave($event)"
+/>
+
+<p-confirmdialog />

@@ -1,0 +1,22 @@
+<div
+  class="shell"
+  [class.shell--collapsed]="collapsed() && !isMobile()"
+  [class.shell--mobile]="isMobile()"
+  [class.shell--drawer-open]="mobileSidebarOpen()"
+>
+  <app-topbar class="shell__topbar" />
+
+  <app-sidebar class="shell__sidebar" />
+
+  <app-context-bar class="shell__subbar" />
+
+  <main class="shell__content">
+    <div class="shell__container">
+      <router-outlet />
+    </div>
+  </main>
+
+  @if (isMobile() && mobileSidebarOpen()) {
+    <div class="shell__backdrop" aria-hidden="true" (click)="closeMobileSidebar()"></div>
+  }
+</div>
