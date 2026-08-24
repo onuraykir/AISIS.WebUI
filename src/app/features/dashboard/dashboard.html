@@ -51,6 +51,17 @@
       Backend'i <code>https</code> profiliyle başlatın (7034) ve migration'ı uygulayın.
       Menü gelmeden sol menü boş kalır, sabit sayfalar çalışmaya devam eder.
     </p>
+
+    <button
+      type="button"
+      class="btn btn--primary home__retry"
+      [disabled]="menuLoading()"
+      (click)="retryMenu()"
+    >
+      <i class="pi" [class.pi-refresh]="!menuLoading()" [class.pi-spin]="menuLoading()"
+         [class.pi-spinner]="menuLoading()" aria-hidden="true"></i>
+      Menüyü yeniden dene
+    </button>
   }
 
   <a class="home__link" routerLink="/sistem/modul-agaci">

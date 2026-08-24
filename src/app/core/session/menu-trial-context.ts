@@ -2,8 +2,10 @@
  * MENÜ DENEMESİ İÇİN geçici kimlik.
  *
  * `GET /api/Menu` kullanıcı ve birim ister; kimlik doğrulama henüz kurulmadı.
- * Değerler backend seed'iyle uyumludur: 1 = sistem.yonetici,
- * 3 = Bilgi İşlem Daire Başkanlığı.
+ * Değerler backend seed'iyle uyumludur: 1 = `sistem` (gizli süper kullanıcı).
+ *
+ * `departmentId` süper kullanıcı için ETKİSİZDİR — süper kullanıcı kapsam
+ * kesişimini atlar ve tüm ağacı görür. Uç noktanın imzası istediği için veriliyor.
  *
  * Kimlik doğrulama geldiğinde bu dosya SİLİNECEK; ikisi de UserContext'ten
  * okunacak ve uç noktanın imzası sadeleşecek.

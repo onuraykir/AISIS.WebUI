@@ -103,3 +103,9 @@
 .home__link:hover {
   text-decoration: underline;
 }
+
+/* Menü alınamadığında beliren tek eylem. Kendiliğinden yeniden denemiyoruz;
+   "sunucu yok" durumu maskelenmesin diye kararı kullanıcı veriyor. */
+.home__retry {
+  margin-top: 12px;
+}

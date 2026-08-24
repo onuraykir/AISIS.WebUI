@@ -22,6 +22,12 @@ export class Dashboard {
 
   readonly menuStatus = this.nav.status;
   readonly menuError = this.nav.loadError;
+  readonly menuLoading = this.nav.loading;
+
+  /** Menü açılışta alınamadıysa sayfayı yenilemeden tekrar dener. */
+  retryMenu(): void {
+    void this.nav.load();
+  }
 
   readonly moduleCount = computed(() => this.nav.menuTree().length);
 
