@@ -44,7 +44,8 @@ npx ng serve --port 4300      # 4200 başka bir projede (Hsys-Web) kullanılıyo
 - **İnce bar**: breadcrumb'ın son halkası sayfa başlığıdır (ayrı başlık şeridi yok),
   favori yıldızı. İnce barın altına `sticky` gölge ile içerik bağlanır.
 - **Sol menü**: çok seviyeli klasör ağacı, daraltılabilir (tercih `localStorage`),
-  aktif klasör kendiliğinden açılır, altta telif satırı ve **menü kaynağı göstergesi**.
+  aktif klasör kendiliğinden açılır, altta telif ve sürüm satırı. Menü boşsa
+  listenin kendi alanında durum bloğu çıkar (bkz. §2.5).
 - **Giriş ekranı** kabuğun dışında, `/giris` — tasarımı henüz yapılmadı (yer tutucu).
 - **Palet**: logodan türetildi. Marka sarısı `#FFED00` yalnızca vurgu; kabuk sıcak antrasit
   `#191714`, içerik sıcak nötr (`--app-content-bg: #e5e3d9`, yüzey `#f7f6f1`).
@@ -80,8 +81,10 @@ Veritabanında garanti altına alınanlar:
 
 **Seed** (`DbSeeds/AuthorizationSeed.cs`, `HasData`): 3 birim, 10 eylem tanımı,
 10 modül, 20 sayfa, 33 sayfa işlemi ve eylemleri, 4 rol, rol izinleri kural ile
-üretiliyor, 5 kullanıcı grubu, 4 kullanıcı, 5 üyelik. Yönetim ekranlarının kendi uç
-noktaları da seed'de tanımlı — sistem kendi kendini yönetiyor. Ayrıntı: §3.5.
+üretiliyor ve **bir gizli süper kullanıcı**. Örnek kullanıcı / grup / üyelik YOK —
+bunlar kuruma özel verilerdir, süper kullanıcı kendi ekranlarından açar (§3.6).
+Yönetim ekranlarının kendi uç noktaları da seed'de tanımlı — sistem kendi kendini
+yönetiyor. Ayrıntı: §3.5.
 
 ### 2.3 Backend — yönetim uçları (Faz 7)
 
@@ -123,7 +126,14 @@ Ortak parçalar: `features/admin/shared/` (`admin-toolbar`, `name-dialog`, `code
 - `core/routing/menu-route-registrar.ts` menü yanıtını router yapılandırmasına çevirir;
   `core/routing/implemented-pages.ts` **kodda kalan tek bağdır** (adres → bileşen).
 - API yoksa uygulama açılmaya devam eder: menü boş, sabit yollar çalışır,
-  durum `idle | loaded | failed` olarak sidebar'da ve ana sayfada görünür.
+  durum `idle | loaded | failed` olarak menü alanında ve ana sayfada görünür.
+- Menü **yalnızca açılışta bir kez** çekiliyor. Backend geç ayağa kalkarsa menü boş
+  kalır ve kendiliğinden tekrar denenmez. Bunun yerine **menü listesinin kendi
+  alanında** bir boş durum bloğu var (`nav__state`): üç sebebi ayırıyor —
+  yükleniyor / alınamadı / görüntülenecek sayfa yok — ve son ikisinde
+  "Yeniden dene" düğmesi sunuyor. Ana sayfadaki hata kutusunda da aynı düğme var.
+  `NavigationService.load()` eşzamanlı çağrıya karşı korumalı. Otomatik yeniden
+  deneme bilerek yok: "sunucu yok" durumu maskelenmemeli.
 
 ---
 
@@ -307,29 +317,143 @@ controller rotalarıyla. `SeedIds` içinde `Act` bloğu ve iki türetici var
 `SCOPE_DEPARTMENT`, `GROUP_ROLE`, `MEMBERSHIP`); üç ayrı `ASSIGN` ucu eski yapıda
 tek satıra sığmıyordu.
 
+## 3.6 Süper kullanıcı ve şifre altyapısı (UYGULANDI)
+
+> 23 Ağustos 2026. Kimlik doğrulamanın (Faz 2) ilk dilimi: şifre altyapısı ve süper
+> kullanıcı. Login/JWT/refresh token **henüz yok**.
+
+### Süper kullanıcı bir flag, rol değil
+
+`User.IsSuperUser`. Yetki denetimini baştan geçer: menü tam ağacı döner, ileride
+gelecek uç nokta eşleştirmesi aranmaz.
+
+**Neden rol/grup değil:** bu bir *break-glass* hesabıdır ve **yönettiği verinin
+doğruluğuna bağlı olmamalıdır**. Tüm roller silinse, grup kapsamı bozulsa veya bir
+modül yanlışlıkla pasifleştirilse bile sisteme girilip düzeltilebilmelidir. Gruba
+üye yapılsaydı, koruma yine yönetilen verinin doğru kalmasına bağlı olurdu — bu
+yüzden seed'de süper kullanıcının **grubu, rolü ve üyeliği yoktur**.
+
+`MenuQueryService.GetFullMenuAsync()` süper kullanıcıya her aktif modülü, sayfayı,
+işlemi ve eylemi döner. Boş modüller de gelir: içini doldurabilmesi için görmesi gerekir.
+
+### `User` alanları
+
+| Eklendi | Kaldırıldı |
+|---|---|
+| `IsSuperUser`, `IsActive`, `MustChangePassword` | `Password` (düz metin) |
+| `PasswordHash`, `PasswordSalt`, `PasswordAlgorithm` | |
+
+`UserName` / `Email` unique index'leri `[IsDeleted] = 0` filtreli hâle getirildi
+(proje kuralıydı, eksikti).
+
+Yol haritasındaki `SecurityStamp`, `AccessFailedCount`, `LockoutEndUtc`,
+`LastLoginAt` ve `RefreshToken` tablosu **bilerek eklenmedi**: kullanan kod
+gelmeden kolon açmıyoruz. Login turunda gelecekler.
+
+### Şifre hash'leme
+
+`Pbkdf2PasswordHasher` — PBKDF2-HMAC-SHA256, **600.000 iterasyon**, 128-bit salt,
+256-bit türev. BCL içinde (`Rfc2898DeriveBytes.Pbkdf2`), ek paket yok.
+
+`PasswordAlgorithm` kolonu `PBKDF2-SHA256-600000` yazar; **iterasyon sayısı
+etiketin parçasıdır**. Parametreler yükseltildiğinde eski satırlar kendi
+etiketleriyle doğrulanmaya devam eder. Tanınmayan etiket sessizce geçmez, `false`
+döner.
+
+### İlk şifre: seed'de değil, ilk açılışta
+
+Seed süper kullanıcıyı **şifresiz** kurar — yani giriş yapamaz. Şifre uygulamanın
+ilk açılışında `SuperUser:InitialPassword` yapılandırmasından okunur
+(`SuperUserInitializer`, `Program.cs`'ten bir kez çağrılır).
+
+**Neden seed'de değil:** migration SQL'ine gömülen bir varsayılan şifre, depoyu
+okuyan herkesin eline geçer ve migration geçmişinden hiç silinmez. Bu yolda sır
+kaynak kodda hiç durmaz; her ortam kendi şifresini verir.
+
+```
+# Geliştirme
+dotnet user-secrets set "SuperUser:InitialPassword" "..." --project AISIS.WebApi
+
+# Canlı
+SuperUser__InitialPassword=...
+```
+
+Kurulum **idempotent**: şifre bir kez yazıldıktan sonra bir daha dokunulmaz, aksi
+halde her açılış kullanıcının kendi şifresini ezerdi. Yapılandırma yoksa hesap
+şifresiz kalır ve açılışta uyarı loglanır — sessizce bir varsayılana düşmek,
+"kurulumu unuttum" hâlini fark edilmez bir açığa çevirirdi.
+
+Kurulan hesapta `MustChangePassword = true`: yapılandırmadaki şifre birden fazla
+kişinin görebileceği bir yerde durur.
+
+### Şifre değiştirme — oturum gerektirmez
+
+`POST api/Account/change-password` → `{ userName, currentPassword, newPassword }`
+
+Mevcut şifreyi bilmek kimliğin kendisidir; JWT beklemez. Login yazılmadan önce de
+süper kullanıcı kendisine verilen ilk şifreyi değiştirebilsin diye böyle. Login
+geldiğinde bu uç geçerliliğini korur.
+
+Kullanıcı yok / şifre yanlış / hesap pasif dallarının **hepsi aynı mesajı** döner:
+hangi kullanıcı adının var olduğu dışarıya sızmasın.
+
+Kurallar `Rules/PasswordRules.cs`'te: en az 10 karakter, en fazla 128, baş/son
+boşluk yok, yeni şifre eskisiyle aynı olamaz. Karmaşıklık kuralı yerine uzunluk
+esas alındı — kural doldurmak için uydurulmuş kısa parolalar daha zayıf.
+
+### Bilinen açık uçlar
+
+- **Rate limiting yok.** Bu uç mevcut şifreyi doğruladığı için bir deneme yüzeyidir;
+  login turunda lockout (`AccessFailedCount`, `LockoutEndUtc`) ve rate limit ile
+  birlikte sertleştirilecek.
+- **Koruma kuralları yazılmadı** (süper kullanıcı silinemez / pasifleştirilemez,
+  son süper kullanıcının flag'i alınamaz). Bugün kullanıcıya dokunan bir ekran
+  veya uç yok; çağıranı olmayan kural yazmadık. `/sistem/kullanici` ekranı
+  yazıldığında `UserRules` ile birlikte gelecek.
+- **K4 ile çakışma:** yol haritası `User.PersonId`'yi zorunlu + unique planlıyor.
+  Süper kullanıcının `Person` kaydı yok. K4 uygulanırken `PersonId` nullable olmalı
+  ve check constraint `IsSuperUser = 1 OR PersonId IS NOT NULL` konmalı.
+- Frontend'de şifre değiştirme ekranı yok; uç Swagger'dan çağrılabilir. Giriş
+  ekranıyla birlikte gelecek.
+
+---
+
 ## 4. Açık işler
 
 ### 4.1 Hemen sıradakiler
 
-- [ ] **Migration üretildi, HENÜZ UYGULANMADI.**
-      `20260822004420_user_auth_basics_2` action katmanını doğru yakalıyor:
-      `PageProcesses` / `ProcessDefinitions` düşüyor, `ActionDefinitions` (10 satır),
-      `PageOperations` (33), `OperationActions` (102) ve `RolePermissions` (177)
-      seed'iyle birlikte oluşuyor. İlk migration (`user_auth_basics`) de uygulanmadığı
-      için ikisi sırayla uygulanacak — birincisi `PageProcesses`'i kurup ikincisi
-      düşürüyor; gereksiz ama doğru. **Silmeyin:** ikinci migration birincisini temel
-      alıyor.
-      **Migration ile model arasında tek satırlık fark var:** ekran yeniden
-      kurulurken `page/{pageId}` (board) ucu kaldırıldı ve seed'de 162 numaralı
-      sayfanın `PAGE_OPERATION › Görüntüle` eylemi `api/PageAdmin/catalog`'a
-      çevrildi. Migration 2 henüz uygulanmadığı için en temizi onu yeniden üretmek:
-      `dotnet ef migrations remove` + `dotnet ef migrations add user_auth_basics_2`.
-      (Migration **1**'e dokunmayın.)
-      Uygulanana kadar hiçbir uç gerçek veriye karşı çalıştırılmadı — özellikle
-      `MenuQueryService`'in LINQ sorgusu ve tüm admin uçları **test edilmedi**.
-      `dotnet ef dbcontext info` ile model doğrulandı, çözüm derleniyor.
+- [x] **Tek başlangıç migration'ı üretildi ve uygulandı** (24 Ağustos).
+      Eski dört migration ve veritabanı silindi; yerine
+      `20260823210638_basics_initial_migration`: 41 tablo, tüm kısıtlar ve seed tek
+      dosyada. Silinen `Faz0_SemaHijyeni`'de elle yazılmış SQL yoktu.
 
-- [ ] **Kimlik doğrulama** (hash/salt, JWT, refresh token, `UserContext`).
+      > `has-pending-model-changes` / `migrations list` çağrılarını `--no-build` ile
+      > çalıştırırsan derlenmiş **eski** derlemeyi okur ve olmayan bir kayma bildirir.
+      > Önce `dotnet build AISIS.DataAccessLayer`.
+
+- [x] **Süper kullanıcının şifresi kuruldu.** `AISIS.WebApi.csproj`'ye `UserSecretsId`
+      eklendi; şifre user-secrets'tan okunup ilk açılışta hash'lendi. Log:
+      *"Super kullanicinin ilk sifresi yapilandirmadan kuruldu."*
+
+- [x] **Uçlar ilk kez gerçek veriye karşı denendi** (24 Ağustos). Hepsi geçti:
+
+      | Uç | Sonuç |
+      |---|---|
+      | `GET /api/Menu?userId=1` | 5 ana modül, 20 sayfa, süper kullanıcı tam ağaç |
+      | `GET /api/OperationAdmin/catalog` | 10 eylem tanımı |
+      | `GET /api/OperationAdmin/endpoints` | 76 uç keşfedildi, 13'ü eşlenmemiş |
+      | `GET /api/PageAdmin/catalog` | 20 sayfa, işlem → eylem ağacıyla |
+      | `GET /api/ModuleAdmin/tree` | 5 ana modül |
+      | `GET /api/RoleAdmin/1/permissions` | 20 sayfa · 33 işlem · 102 eylem, 102'si verilmiş |
+      | `GET /api/UserGroupAdmin` | 0 kayıt (beklenen: seed'de grup yok) |
+      | `POST /api/Account/change-password` | dört dal da doğru (aşağıda) |
+
+      Şifre ucunun doğrulaması: yanlış şifre ve olmayan kullanıcı **aynı** genel
+      mesajı döndü (kullanıcı adı sızdırmıyor); doğru şifre + kısa yeni şifre
+      uzunluk kuralına düştü — yani PBKDF2 doğrulaması gerçek hash'e karşı çalışıyor.
+
+- [ ] **Kimlik doğrulama — kalan kısım.** Şifre altyapısı ve süper kullanıcı
+      yapıldı (§3.6). Kalan: JWT login, refresh token, lockout, `UserContext`.
       Bkz. `AuthenticationSolution/docs/AUTH-TASARIM-YOL-HARITASI.md`.
       Geldiğinde silinecek iki dosya: `core/session/menu-trial-context.ts` ve
       `core/session/auth-placeholder.ts`; `MenuController`'ın query parametreleri de kalkacak.

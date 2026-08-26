@@ -36,9 +36,13 @@ export class NavigationService {
 
   private readonly _status = signal<MenuStatus>('idle');
   private readonly _loadError = signal<string | null>(null);
+  private readonly _loading = signal(false);
 
   readonly status = this._status.asReadonly();
   readonly loadError = this._loadError.asReadonly();
+
+  /** Yükleme sürüyor mu? "Yeniden dene" düğmesi bunu okur. */
+  readonly loading = this._loading.asReadonly();
 
   /** Sidebar'ın kullandığı görünüm ağacı; ham ağaçtan türetilir. */
   readonly menu = computed<readonly NavItem[]>(() => menuToNavItems(this.menuTree()));
@@ -51,8 +55,19 @@ export class NavigationService {
    *
    * Hata durumunda uygulama ÇALIŞMAYA DEVAM EDER: menü boş kalır, sabit
    * yollar (ana sayfa, profil) erişilebilirliğini korur.
+   *
+   * Açılışta bir kez çağrılır (provideAppInitializer) ama YENIDEN çağrılabilir:
+   * backend geç ayağa kalktığında kullanıcı sayfayı yenilemek zorunda kalmasın
+   * diye sidebar ve ana sayfa bir "yeniden dene" sunuyor. Kendiliğinden tekrar
+   * denemiyoruz — "sunucu yok" durumu maskelenmemeli.
    */
   async load(): Promise<void> {
+    if (this._loading()) {
+      return;
+    }
+
+    this._loading.set(true);
+
     try {
       const tree = await firstValueFrom(
         this.menuApi.getMenu(MENU_TRIAL_CONTEXT.userId, MENU_TRIAL_CONTEXT.departmentId),
@@ -69,6 +84,8 @@ export class NavigationService {
       this.menuTree.set([]);
       this._status.set('failed');
       this._loadError.set(error instanceof Error ? error.message : 'Menü alınamadı.');
+    } finally {
+      this._loading.set(false);
     }
   }
 

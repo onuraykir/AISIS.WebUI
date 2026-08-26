@@ -36,12 +36,11 @@ export class Sidebar {
   /** Telif satırındaki yıl. Bir kez hesaplanır; yıl dönümünde sayfa zaten yenilenir. */
   readonly currentYear = new Date().getFullYear();
 
-  /**
-   * Menü ucunun durumu. Deneme aşamasında görünür tutuluyor;
-   * kimlik doğrulama ve menü ucu kalıcı bağlandığında bu gösterge kalkacak.
-   */
-  readonly menuStatus = this.nav.status;
-  readonly menuLoadError = this.nav.loadError;
+  /** Menü ucunun durumu; yalnızca boş durum bloğunu kurmak için okunuyor. */
+  private readonly menuStatus = this.nav.status;
+  private readonly menuLoadError = this.nav.loadError;
+
+  readonly menuLoading = this.nav.loading;
 
   /** Kullanıcının elle açtığı klasörler + aktif sayfanın klasörleri. */
   private readonly expandedIds = signal<ReadonlySet<string>>(new Set<string>());
@@ -56,6 +55,46 @@ export class Sidebar {
 
     return buildNavRows(menu, this.expandedIds());
   });
+
+  /**
+   * Menü listesi boşken gösterilecek durum.
+   *
+   * Üç ayrı sebep var ve üçü farklı şey söyler: yükleniyor, alınamadı, ya da
+   * gerçekten görüntülenecek sayfa yok. Aynı boş alanı göstermek, "sunucu kapalı"
+   * ile "yetkin yok"u birbirine karıştırırdı.
+   */
+  readonly emptyState = computed(() => {
+    switch (this.menuStatus()) {
+      case 'failed':
+        return {
+          icon: 'pi pi-exclamation-triangle',
+          title: 'Menü alınamadı',
+          text: this.menuLoadError() ?? 'Sunucuya ulaşılamadı.',
+          retryLabel: 'Yeniden dene',
+        };
+
+      case 'loaded':
+        return {
+          icon: 'pi pi-inbox',
+          title: 'Görüntülenecek sayfa yok',
+          text: 'Bu birimde yetkilendirilmiş sayfa bulunmuyor.',
+          retryLabel: 'Yenile',
+        };
+
+      default:
+        return {
+          icon: 'pi pi-spinner pi-spin',
+          title: 'Menü yükleniyor…',
+          text: '',
+          retryLabel: null,
+        };
+    }
+  });
+
+  /** Menü alınamadıysa sayfayı yenilemeden tekrar dener. */
+  retryMenu(): void {
+    void this.nav.load();
+  }
 
   constructor() {
     // Adres değiştiğinde o sayfaya giden klasörler kendiliğinden açılır.

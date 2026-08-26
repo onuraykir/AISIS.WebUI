@@ -43,6 +43,58 @@
           </a>
         }
       </li>
+    } @empty {
+      <li class="nav__state" [class.nav__state--mini]="collapsed() && !isMobile()">
+        @if (collapsed() && !isMobile()) {
+          @if (emptyState().retryLabel; as label) {
+            <button
+              type="button"
+              class="nav__state-retry nav__state-retry--mini"
+              [pTooltip]="emptyState().title + ' — ' + label"
+              tooltipPosition="right"
+              [attr.aria-label]="label"
+              [disabled]="menuLoading()"
+              (click)="retryMenu()"
+            >
+              <i
+                class="pi"
+                [class.pi-refresh]="!menuLoading()"
+                [class.pi-spinner]="menuLoading()"
+                [class.pi-spin]="menuLoading()"
+                aria-hidden="true"
+              ></i>
+            </button>
+          } @else {
+            <i class="nav__state-icon {{ emptyState().icon }}" [pTooltip]="emptyState().title"
+               tooltipPosition="right"></i>
+          }
+        } @else {
+          <i class="nav__state-icon {{ emptyState().icon }}" aria-hidden="true"></i>
+          <span class="nav__state-title">{{ emptyState().title }}</span>
+
+          @if (emptyState().text) {
+            <span class="nav__state-text">{{ emptyState().text }}</span>
+          }
+
+          @if (emptyState().retryLabel; as label) {
+            <button
+              type="button"
+              class="nav__state-retry"
+              [disabled]="menuLoading()"
+              (click)="retryMenu()"
+            >
+              <i
+                class="pi"
+                [class.pi-refresh]="!menuLoading()"
+                [class.pi-spinner]="menuLoading()"
+                [class.pi-spin]="menuLoading()"
+                aria-hidden="true"
+              ></i>
+              {{ label }}
+            </button>
+          }
+        }
+      </li>
     }
   </ul>
 
@@ -58,17 +110,7 @@
     } @else {
       <span class="sidebar__copy">© {{ currentYear }} Çankaya Üniversitesi</span>
       <span class="sidebar__rights">Tüm hakları saklıdır.</span>
-      <span class="sidebar__version">
-        AISIS v0.1.0 ·
-        <span
-          class="sidebar__source"
-          [class.sidebar__source--api]="menuStatus() === 'loaded' && !menuLoadError()"
-          [pTooltip]="menuLoadError() ?? 'Menü GET /api/Menu ucundan geldi'"
-          tooltipPosition="top"
-        >
-          menü: {{ menuStatus() === 'loaded' ? 'api' : menuStatus() === 'failed' ? 'yok' : '…' }}
-        </span>
-      </span>
+      <span class="sidebar__version">AISIS v0.1.0</span>
     }
   </footer>
 </nav>
