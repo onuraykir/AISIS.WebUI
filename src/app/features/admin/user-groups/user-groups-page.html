@@ -8,7 +8,12 @@
       Yenile
     </button>
 
-    <button type="button" class="btn btn--primary" *appHasAction="'CREATE'; operation: 'GROUP'" (click)="openCreate()">
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'GROUP'"
+      (click)="openCreate()"
+    >
       <i class="pi pi-plus" aria-hidden="true"></i>
       Grup
     </button>
@@ -237,7 +242,9 @@
                       <i class="row__icon pi pi-user" aria-hidden="true"></i>
                       <span class="row__text">
                         <span class="row__name">{{ member.userName }}</span>
-                        <span class="row__sub">{{ member.departmentName }} · {{ member.email }}</span>
+                        <span class="row__sub"
+                          >{{ member.departmentName }} · {{ member.email }}</span
+                        >
                       </span>
                     </span>
 

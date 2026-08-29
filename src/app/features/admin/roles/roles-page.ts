@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialog } from 'primeng/confirmdialog';
@@ -13,12 +20,7 @@ import { HasAction } from '@shared/directives/has-action';
 import { AdminToolbar } from '../shared/admin-toolbar/admin-toolbar';
 import { NameDialog } from '../shared/name-dialog/name-dialog';
 import { RoleAdminStore, pageActionIds } from './data-access/role-admin.store';
-import {
-  MatrixModule,
-  MatrixOperation,
-  MatrixPage,
-  RoleListItem,
-} from './data-access/role.models';
+import { MatrixModule, MatrixOperation, MatrixPage, RoleListItem } from './data-access/role.models';
 
 /** Matriste çizilen tek satır: sayfa + hangi modülün altında olduğu. */
 interface MatrixRow {

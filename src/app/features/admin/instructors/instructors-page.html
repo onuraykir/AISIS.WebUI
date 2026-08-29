@@ -1,0 +1,393 @@
+<app-admin-toolbar
+  title="Öğretim Elemanları"
+  description="Akademik kadronun görev dönemleri ve birim görevleri. Aynı kişi bir bölümde öğretim üyesi, başka bölümde bölüm başkanı olabilir — bunlar ayrı bağlardır."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'INSTRUCTOR'"
+      (click)="openCreate()"
+    >
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Öğretim Elemanı
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.total() }}</span>
+      <span class="stats__label">kayıt</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.openCount() }}</span>
+      <span class="stats__label">açık</span>
+    </div>
+    @if (store.partTimeCount() > 0) {
+      <div class="stats__item">
+        <span class="stats__value">{{ store.partTimeCount() }}</span>
+        <span class="stats__label">ders saati ücretli</span>
+      </div>
+    }
+    @if (store.closedCount() > 0) {
+      <div class="stats__item">
+        <span class="stats__value">{{ store.closedCount() }}</span>
+        <span class="stats__label">kapanmış</span>
+      </div>
+    }
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Öğretim elemanı listesi yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board">
+    <!-- ── Liste ── -->
+    <section class="app-card board__main" aria-label="Öğretim elemanı listesi">
+      <header class="list__head">
+        <h3 class="pane__title">
+          <i class="pi pi-id-card" aria-hidden="true"></i> Görev Dönemleri
+        </h3>
+
+        <app-admin-filter-bar
+          placeholder="Ad, TCKN veya sicil…"
+          [search]="store.search()"
+          (searchChange)="onSearchChange($event)"
+          [dirty]="store.filtersDirty()"
+          (clear)="clearFilters()"
+        >
+          <ng-container filters>
+            <p-select
+              [options]="departmentFilterOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="store.departmentId()"
+              (ngModelChange)="store.departmentId.set($event); applyFilters()"
+              [filter]="true"
+              filterBy="label"
+              placeholder="Tüm birimler"
+              appendTo="body"
+              class="list__filter"
+            />
+
+            <p-select
+              [options]="openStates"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="store.onlyOpen()"
+              (ngModelChange)="store.onlyOpen.set($event); applyFilters()"
+              appendTo="body"
+              class="list__filter list__filter--narrow"
+            />
+          </ng-container>
+        </app-admin-filter-bar>
+      </header>
+
+      <p class="list__note">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        Birim süzgeci <strong>açık</strong> bağa bakar: geçmişte orada görev yapmış olmak yetmez.
+      </p>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4, 5]; track row) {
+            <p-skeleton height="52px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (item of store.items(); track item.id) {
+            <li>
+              <div
+                class="row"
+                [class.row--selected]="store.selectedId() === item.id"
+                [class.row--passive]="!item.isOpen"
+              >
+                <button type="button" class="row__main" (click)="select(item)">
+                  <i class="row__icon pi pi-user" aria-hidden="true"></i>
+
+                  <span class="row__text">
+                    <span class="row__name">
+                      @if (item.academicTitle) {
+                        {{ item.academicTitle }}
+                      }
+                      {{ item.fullName }}
+                    </span>
+                    <span class="row__sub">
+                      {{ item.isFullTime ? 'Kadrolu' : 'Ders saati ücretli' }}
+                      @if (item.primaryDepartmentName) {
+                        · {{ item.primaryDepartmentName }}
+                      }
+                    </span>
+                  </span>
+
+                  <span class="row__meta">
+                    <code class="row__code">{{ item.registryNumber }}</code>
+
+                    @if (item.isOpen) {
+                      @if (item.openAssignmentCount > 0) {
+                        <span
+                          class="row__badge row__badge--members"
+                          pTooltip="Açık birim görevi sayısı"
+                          tooltipPosition="top"
+                        >
+                          {{ item.openAssignmentCount }}
+                        </span>
+                      }
+                    } @else {
+                      <span class="row__badge row__badge--passive">Kapandı</span>
+                    }
+                  </span>
+                </button>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-id-card state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">
+                {{ store.filtersDirty() ? 'Eşleşen kayıt yok' : 'Öğretim elemanı kaydı yok' }}
+              </h3>
+              <p class="state__text">
+                {{
+                  store.filtersDirty()
+                    ? 'Süzgeçleri değiştirin veya temizleyin.'
+                    : 'Kayıt TCKN ile başlar: kişi bulunur veya oluşturulur, ilk görevi aynı işlemde yazılır.'
+                }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Künye ── -->
+    <aside class="app-card board__detail" aria-label="Seçili öğretim elemanı">
+      @if (store.detailLoading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3]; track row) {
+            <p-skeleton height="44px" />
+          }
+        </div>
+      } @else if (detail(); as instructor) {
+        <header class="detail__head">
+          <span class="detail__icon"><i class="pi pi-user" aria-hidden="true"></i></span>
+          <div class="detail__identity">
+            <h3 class="detail__name">
+              @if (instructor.academicTitle) {
+                {{ instructor.academicTitle }}
+              }
+              {{ instructor.person.fullName }}
+            </h3>
+            <code class="detail__code">{{ instructor.registryNumber }}</code>
+          </div>
+        </header>
+
+        @if (!instructor.isOpen) {
+          <p class="detail__note detail__note--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Bu görev dönemi <strong>sonlandırılmış</strong>. Yeni görev eklenemez; kayıt geçmişiyle
+            birlikte durur.
+          </p>
+        }
+
+        <dl class="detail__facts">
+          <div>
+            <dt>TCKN</dt>
+            <dd>{{ instructor.person.nationalId }}</dd>
+          </div>
+          <div>
+            <dt>Kadro</dt>
+            <dd>{{ instructor.isFullTime ? 'Kadrolu' : 'Ders saati ücretli' }}</dd>
+          </div>
+          <div>
+            <dt>Derece</dt>
+            <dd>{{ instructor.academicDegree || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Başlama</dt>
+            <dd>{{ instructor.hireDate ? (instructor.hireDate | slice: 0 : 10) : '—' }}</dd>
+          </div>
+          <div>
+            <dt>Bitiş</dt>
+            <dd>{{ instructor.endDate ? (instructor.endDate | slice: 0 : 10) : 'sürüyor' }}</dd>
+          </div>
+          <div>
+            <dt>E-posta</dt>
+            <dd>{{ instructor.person.email || '—' }}</dd>
+          </div>
+        </dl>
+
+        <p class="detail__note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Kimlik bilgileri buradan değişmez — aynı kişi idari kütükte de kayıtlı olabilir. Düzeltme
+          <strong>Kişiler</strong> ekranından yapılır.
+        </p>
+
+        <section class="detail__section">
+          <div class="detail__section-head">
+            <h4 class="detail__section-title">Birim görevleri</h4>
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'CREATE'; operation: 'INSTRUCTOR_ASSIGNMENT'"
+              [disabled]="store.saving() || recordClosed()"
+              (click)="openAddAssignment()"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i> Görev
+            </button>
+          </div>
+
+          <ul class="assignments">
+            @for (assignment of instructor.assignments; track assignment.id) {
+              <li class="assignment" [class.assignment--closed]="!assignment.isOpen">
+                <div class="assignment__text">
+                  <span class="assignment__dept">
+                    {{ assignment.departmentName }}
+                    @if (assignment.isPrimary && assignment.isOpen) {
+                      <span
+                        class="assignment__badge"
+                        pTooltip="Kadrosunun bulunduğu birim"
+                        tooltipPosition="top"
+                      >
+                        Ana birim
+                      </span>
+                    }
+                  </span>
+                  <span class="assignment__sub">
+                    {{ dutyLabel(assignment) }}
+                    ·
+                    {{ assignment.startDate | slice: 0 : 10 }}
+                    @if (assignment.endDate) {
+                      – {{ assignment.endDate | slice: 0 : 10 }} · {{ endReasonLabel(assignment) }}
+                    } @else {
+                      – sürüyor
+                    }
+                  </span>
+                </div>
+
+                @if (assignment.isOpen) {
+                  <div class="assignment__actions">
+                    <button
+                      type="button"
+                      class="row__action"
+                      pTooltip="Düzenle"
+                      tooltipPosition="top"
+                      aria-label="Görevi düzenle"
+                      *appHasAction="'UPDATE'; operation: 'INSTRUCTOR_ASSIGNMENT'"
+                      [disabled]="store.saving()"
+                      (click)="openEditAssignment(assignment)"
+                    >
+                      <i class="pi pi-pencil"></i>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="row__action"
+                      pTooltip="Görevi kapat"
+                      tooltipPosition="top"
+                      aria-label="Görevi kapat"
+                      *appHasAction="'WITHDRAW'; operation: 'INSTRUCTOR_ASSIGNMENT'"
+                      [disabled]="store.saving()"
+                      (click)="openCloseAssignment(assignment)"
+                    >
+                      <i class="pi pi-sign-out"></i>
+                    </button>
+                  </div>
+                }
+              </li>
+            } @empty {
+              <li class="assignments__empty">Birim görevi yok.</li>
+            }
+          </ul>
+
+          <p class="detail__note">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Aynı bölümde birden fazla görev olabilir. Son açık görev kapansa bile görev dönemi
+            <strong>kendiliğinden kapanmaz</strong>.
+          </p>
+        </section>
+
+        <footer class="detail__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasAction="'UPDATE'; operation: 'INSTRUCTOR'"
+            [disabled]="store.saving()"
+            (click)="openEdit()"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i> Düzenle
+          </button>
+
+          <button
+            type="button"
+            class="btn btn--danger"
+            *appHasAction="'WITHDRAW'; operation: 'INSTRUCTOR'"
+            [disabled]="store.saving() || recordClosed()"
+            (click)="openEndRecord()"
+          >
+            <i class="pi pi-sign-out" aria-hidden="true"></i> Sonlandır
+          </button>
+        </footer>
+
+        <p class="detail__note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Kayıt <strong>silinmez</strong>: geçmiş görev dönemleri akreditasyon hesaplarına dayanak
+          olabiliyor. Ders ve dönem bağları bu ekranda değil, Değerlendirme modülünde.
+        </p>
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Kayıt seçilmedi</h3>
+          <p class="state__text">
+            Künyesini ve birim görevlerini görmek için soldan bir görev dönemi seçin.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<app-instructor-form-dialog
+  [(visible)]="formOpen"
+  [instructor]="editing() ? detail() : null"
+  [departmentOptions]="store.departmentOptions()"
+  [saving]="store.saving()"
+  (save)="onFormSave($event)"
+/>
+
+<app-instructor-assignment-dialog
+  [(visible)]="assignmentOpen"
+  [assignment]="assignmentInDialog()"
+  [departmentOptions]="store.departmentOptions()"
+  [saving]="store.saving()"
+  (save)="onAssignmentSave($event)"
+/>
+
+<app-assignment-close-dialog
+  [(visible)]="closeOpen"
+  [heading]="closeHeading()"
+  [description]="closeDescription()"
+  [confirmLabel]="closeIntent()?.kind === 'record' ? 'Sonlandır' : 'Kapat'"
+  [danger]="closeIntent()?.kind === 'record'"
+  [saving]="store.saving()"
+  (save)="onCloseSave($event)"
+/>

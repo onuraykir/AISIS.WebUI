@@ -6,7 +6,7 @@ import { Tooltip } from 'primeng/tooltip';
 import { ActionDefinition } from '../data-access/operation.models';
 
 /**
- * Ortak eylem sözlüğü (VIEW, CREATE, …).
+ * Ortak eylem sözlüğü (CREATE, UPDATE, …).
  *
  * Ana akışta değil, üst çubuktan açılan bir diyalogda: on satırlık bu liste
  * yılda birkaç kez değişir, günlük iş ise sayfaya işlem ve eylem bağlamaktır.

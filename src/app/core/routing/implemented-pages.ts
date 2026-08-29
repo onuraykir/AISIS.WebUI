@@ -11,6 +11,14 @@ import { Type } from '@angular/core';
  * "hazırlanmadı" ekranına düşer.
  */
 export const IMPLEMENTED_PAGES: Record<string, () => Promise<Type<unknown>>> = {
+  '/tanim/bolum': () =>
+    import('@features/admin/departments/department-tree-page').then((m) => m.DepartmentTreePage),
+  '/tanim/kisi': () => import('@features/admin/people/people-page').then((m) => m.PeoplePage),
+  '/tanim/ogrenci': () =>
+    import('@features/admin/students/students-page').then((m) => m.StudentsPage),
+  '/tanim/ogretim-elemani': () =>
+    import('@features/admin/instructors/instructors-page').then((m) => m.InstructorsPage),
+  '/tanim/personel': () => import('@features/admin/staff/staff-page').then((m) => m.StaffPage),
   '/sistem/modul-agaci': () =>
     import('@features/admin/module-tree/module-tree-page').then((m) => m.ModuleTreePage),
   '/sistem/sayfa-katalogu': () =>

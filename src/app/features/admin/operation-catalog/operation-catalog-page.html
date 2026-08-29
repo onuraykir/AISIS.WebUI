@@ -1,6 +1,6 @@
 <app-admin-toolbar
   title="İşlem Kataloğu"
-  description="Sayfa → İşlem → Eylem. İşlemi siz tanımlarsınız: sayfanın bir bölümü gibi (&quot;Grid İşlemleri&quot;, &quot;Eşik Yönetimi&quot;). Eylemler ortak sözlükten seçilir, uç nokta eylemde durur ve yetki de oraya verilir."
+  description='Sayfa → İşlem → Eylem. İşlemi siz tanımlarsınız: sayfanın bir bölümü gibi ("Grid İşlemleri", "Eşik Yönetimi"). Eylemler ortak sözlükten seçilir, uç nokta eylemde durur ve yetki de oraya verilir.'
 >
   <ng-container actions>
     <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
@@ -180,8 +180,8 @@
         @if (!page.isPlaced) {
           <p class="detail__note detail__note--warn">
             <i class="pi pi-info-circle" aria-hidden="true"></i>
-            Bu sayfa havuzda: işlem tanımlanabilir ama bir modüle yerleştirilene kadar
-            eylemlerine rol yetkisi verilemez.
+            Bu sayfa havuzda: işlem tanımlanabilir ama bir modüle yerleştirilene kadar eylemlerine
+            rol yetkisi verilemez.
           </p>
         }
 
@@ -362,9 +362,10 @@
             <i class="pi pi-sitemap state__icon" aria-hidden="true"></i>
             <h3 class="state__title">Bu sayfada işlem yok</h3>
             <p class="state__text">
-              Sayfanın bir bölümünü işlem olarak tanımlayın — örneğin "Grid İşlemleri" —
-              sonra altına Görüntüle, Ekle, Güncelle, Sil eylemlerini bağlayın.
-              En az bir işlemde <code>VIEW</code> olmadan sayfa menüde görünmez.
+              Sayfanın bir bölümünü işlem olarak tanımlayın — örneğin "Grid İşlemleri" — sonra
+              altına Ekle, Güncelle, Sil eylemlerini bağlayın. Sayfayı görmek için yetki gerekmez:
+              menüde çıkması grubun modül kapsamından gelir. Buraya yalnızca
+              <strong>yazma</strong> eylemleri konur.
             </p>
             <div class="state__actions">
               <button
@@ -385,8 +386,8 @@
           <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
           <h3 class="state__title">Sayfa seçilmedi</h3>
           <p class="state__text">
-            Soldan bir sayfa seçin; o sayfanın işlemlerini ve her işlemin eylemlerini
-            görüp yenilerini bağlayabilirsiniz.
+            Soldan bir sayfa seçin; o sayfanın işlemlerini ve her işlemin eylemlerini görüp
+            yenilerini bağlayabilirsiniz.
           </p>
         </div>
       }

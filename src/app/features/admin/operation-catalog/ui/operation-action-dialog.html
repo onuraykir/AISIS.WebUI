@@ -23,8 +23,8 @@
           class="form__select"
         />
         <p class="form__help">
-          Ortak eylem sözlüğünden seçilir. Aynı eylem bir işleme yalnızca bir kez bağlanır;
-          ikinci bir <code>Ekle</code> gerekiyorsa ayrı bir işlem açılır.
+          Ortak eylem sözlüğünden seçilir. Aynı eylem bir işleme yalnızca bir kez bağlanır; ikinci
+          bir <code>Ekle</code> gerekiyorsa ayrı bir işlem açılır.
         </p>
 
         @if (form.controls.actionDefinitionId.touched && form.controls.actionDefinitionId.invalid) {
@@ -54,7 +54,9 @@
       >
         <ng-template #item let-option>
           <span class="epick">
-            <span class="method method--{{ option.method.toLowerCase() }}">{{ option.method }}</span>
+            <span class="method method--{{ option.method.toLowerCase() }}">{{
+              option.method
+            }}</span>
             <code class="epick__route">{{ option.route }}</code>
             <span class="epick__hint">{{ option.hint }}</span>
           </span>
@@ -62,10 +64,9 @@
       </p-select>
 
       <p class="form__help">
-        Liste uygulamanın controller rotalarından okunur; adres elle yazılmaz. Boş
-        bırakılırsa bu eylem sunucu tarafındaki adres eşleştirmesine <strong>girmez</strong> —
-        <code>VIEW</code> gibi salt görünürlük yetkileri böyledir ve ekranda
-        <code>UNAVAILABLE</code> görünür.
+        Liste uygulamanın controller rotalarından okunur; adres elle yazılmaz. Boş bırakılırsa bu
+        eylem sunucu tarafındaki adres eşleştirmesine <strong>girmez</strong> ve ekranda
+        <code>UNAVAILABLE</code> görünür — ucu henüz yazılmamış eylemler böyledir.
       </p>
     </div>
 

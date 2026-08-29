@@ -55,9 +55,15 @@ export class PermissionService {
     return operations.some((item) => item.code === operation && item.actions.includes(action));
   }
 
-  /** Sayfanın menüde görünür olup olmadığı; route guard'ı bunu kullanır. */
+  /**
+   * Sayfa açılabilir mi? Route guard'ı bunu kullanır.
+   *
+   * Sayfanın menüde OLMASI yeterlidir; ayrıca bir görüntüleme yetkisi aranmaz.
+   * Menü zaten kapsamla süzülmüş geliyor — sunucu kapsam dışındaki sayfayı hiç
+   * göndermiyor. Eylemi olmayan bir sayfa da açılır ve salt okunur görünür.
+   */
   canOpen(route: string): boolean {
-    return this.can('VIEW', undefined, route);
+    return this.operationsByRoute().has(normalize(route));
   }
 }
 

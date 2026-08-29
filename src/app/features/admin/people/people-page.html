@@ -1,0 +1,268 @@
+<app-admin-toolbar
+  title="Kişiler"
+  description="Üç şeridin buluşma noktası. Kişi TCKN, ad, öğrenci numarası veya sicil ile aranır; künyesinde öğrencilik, akademik ve idari kayıtları ayrı ayrı listelenir."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.total() }}</span>
+      <span class="stats__label">kişi</span>
+    </div>
+    @if (store.withoutOpenRecordCount() > 0) {
+      <div class="stats__item">
+        <span class="stats__value">{{ store.withoutOpenRecordCount() }}</span>
+        <span class="stats__label">açık kaydı yok</span>
+      </div>
+    }
+  </div>
+</app-admin-toolbar>
+
+<p class="page-note">
+  <i class="pi pi-info-circle" aria-hidden="true"></i>
+  Bu ekrandan <strong>yeni kayıt açılmaz</strong>: kayıt her zaman şeridin kendi ekranından, TCKN
+  ile başlar. Buradan yalnızca aranır, görülür ve kimlik düzeltilir.
+</p>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Kişi listesi yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board">
+    <!-- ── Liste ── -->
+    <section class="app-card board__main" aria-label="Kişi listesi">
+      <header class="list__head">
+        <h3 class="pane__title"><i class="pi pi-users" aria-hidden="true"></i> Kişiler</h3>
+
+        <app-admin-filter-bar
+          placeholder="TCKN, ad, öğrenci no veya sicil…"
+          [search]="store.search()"
+          (searchChange)="onSearchChange($event)"
+          [dirty]="store.filtersDirty()"
+          (clear)="clearFilters()"
+        />
+      </header>
+
+      <p class="list__note">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        Rozetteki sayı <strong>açık</strong> kayıtları gösterir; geçmişi olan kişi de listede kalır.
+      </p>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4, 5]; track row) {
+            <p-skeleton height="52px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (item of store.items(); track item.id) {
+            <li>
+              <div class="row" [class.row--selected]="store.selectedId() === item.id">
+                <button type="button" class="row__main" (click)="select(item)">
+                  <i class="row__icon pi pi-user" aria-hidden="true"></i>
+
+                  <span class="row__text">
+                    <span class="row__name">{{ item.fullName }}</span>
+                    <span class="row__sub">{{ item.totalRecordCount }} rol kaydı</span>
+                  </span>
+
+                  <span class="row__meta">
+                    <code class="row__code">{{ item.nationalId }}</code>
+
+                    @if (item.openStudentCount > 0) {
+                      <span
+                        class="row__badge row__badge--lane"
+                        pTooltip="Açık öğrencilik kaydı"
+                        tooltipPosition="top"
+                      >
+                        <i class="pi pi-graduation-cap" aria-hidden="true"></i>
+                        {{ item.openStudentCount }}
+                      </span>
+                    }
+                    @if (item.openInstructorCount > 0) {
+                      <span
+                        class="row__badge row__badge--lane"
+                        pTooltip="Açık akademik kayıt"
+                        tooltipPosition="top"
+                      >
+                        <i class="pi pi-id-card" aria-hidden="true"></i>
+                        {{ item.openInstructorCount }}
+                      </span>
+                    }
+                    @if (item.openStaffCount > 0) {
+                      <span
+                        class="row__badge row__badge--lane"
+                        pTooltip="Açık idari kayıt"
+                        tooltipPosition="top"
+                      >
+                        <i class="pi pi-briefcase" aria-hidden="true"></i>
+                        {{ item.openStaffCount }}
+                      </span>
+                    }
+                    @if (openRecordCount(item) === 0) {
+                      <span class="row__badge row__badge--passive">Açık kaydı yok</span>
+                    }
+                  </span>
+                </button>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-users state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">
+                {{ store.filtersDirty() ? 'Eşleşen kişi yok' : 'Kişi yok' }}
+              </h3>
+              <p class="state__text">
+                {{
+                  store.filtersDirty()
+                    ? 'Aramayı değiştirin veya temizleyin.'
+                    : 'Kişiler öğrenci, öğretim elemanı veya çalışan kaydı açıldığında oluşur.'
+                }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Künye ── -->
+    <aside class="app-card board__detail" aria-label="Seçili kişi">
+      @if (store.detailLoading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3]; track row) {
+            <p-skeleton height="44px" />
+          }
+        </div>
+      } @else if (detail(); as info) {
+        <header class="detail__head">
+          <span class="detail__icon"><i class="pi pi-user" aria-hidden="true"></i></span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ info.person.fullName }}</h3>
+            <code class="detail__code">{{ info.person.nationalId }}</code>
+          </div>
+        </header>
+
+        <dl class="detail__facts">
+          <div>
+            <dt>Doğum tarihi</dt>
+            <dd>{{ info.person.birthDate ? (info.person.birthDate | slice: 0 : 10) : '—' }}</dd>
+          </div>
+          <div>
+            <dt>E-posta</dt>
+            <dd>{{ info.person.email || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Telefon</dt>
+            <dd>{{ info.person.phone || '—' }}</dd>
+          </div>
+        </dl>
+
+        <!-- Üç şerit AYRI kutularda: numaralar ayrı kütüklerin sayıları. -->
+        @for (lane of lanes(); track lane.title) {
+          <section class="detail__section">
+            <div class="detail__section-head">
+              <h4 class="detail__section-title">
+                <i [class]="lane.icon" aria-hidden="true"></i> {{ lane.title }}
+              </h4>
+
+              @if (lane.records.length > 0) {
+                <button type="button" class="linkbtn" (click)="openLane(lane)">
+                  Şeride git <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                </button>
+              }
+            </div>
+
+            <ul class="assignments">
+              @for (record of lane.records; track record.id) {
+                <li class="assignment" [class.assignment--closed]="!record.isOpen">
+                  <div class="assignment__text">
+                    <span class="assignment__dept">
+                      {{ record.primaryDepartmentName || '—' }}
+                      @if (record.isOpen) {
+                        <span class="assignment__badge">Açık</span>
+                      } @else {
+                        <span class="assignment__badge assignment__badge--kind">
+                          {{ record.statusText }}
+                        </span>
+                      }
+                    </span>
+                    <span class="assignment__sub">
+                      {{ lane.numberLabel }}: {{ record.number }}
+                      @if (record.detail) {
+                        · {{ record.detail }}
+                      }
+                      @if (record.startDate) {
+                        · {{ record.startDate | slice: 0 : 10 }}
+                        @if (record.endDate) {
+                          – {{ record.endDate | slice: 0 : 10 }}
+                        }
+                      }
+                    </span>
+                  </div>
+                </li>
+              } @empty {
+                <li class="assignments__empty">{{ lane.empty }}</li>
+              }
+            </ul>
+          </section>
+        }
+
+        <p class="detail__note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Şeritler bilerek <strong>ayrı</strong> gösteriliyor: öğrenci numarası ile sicil ayrı
+          kütüklerin sayılarıdır ve aynı anda ikisi de bulunabilir.
+        </p>
+
+        <footer class="detail__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasAction="'UPDATE'; operation: 'PERSON'"
+            [disabled]="store.saving()"
+            (click)="openEdit()"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i> Kişi Kartını Düzelt
+          </button>
+        </footer>
+
+        <p class="detail__note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Kişi <strong>silinmez</strong>: silinseydi üç şeridin geçmişi birden giderdi.
+        </p>
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Kişi seçilmedi</h3>
+          <p class="state__text">
+            Künyesini ve üç şeritteki kayıtlarını görmek için soldan bir kişi seçin.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<app-person-form-dialog
+  [(visible)]="formOpen"
+  [person]="detail()?.person ?? null"
+  [saving]="store.saving()"
+  (save)="onSave($event)"
+/>

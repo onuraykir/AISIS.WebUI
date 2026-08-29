@@ -80,7 +80,10 @@
   color: var(--p-text-muted-color);
   font-size: 13px;
   cursor: pointer;
-  transition: border-color 0.12s, color 0.12s, background-color 0.12s;
+  transition:
+    border-color 0.12s,
+    color 0.12s,
+    background-color 0.12s;
 }
 
 .form__icon-option:hover {

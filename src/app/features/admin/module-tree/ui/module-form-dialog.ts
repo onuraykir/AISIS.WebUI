@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, model, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  model,
+  output,
+  untracked,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { Dialog } from 'primeng/dialog';
@@ -79,29 +89,45 @@ export class ModuleFormDialog {
     isActive: [true],
   });
 
+  /**
+   * Formun en son hangi modül için kurulduğu. Sıfırlama YALNIZCA diyalog
+   * açıldığında yapılmalı; modül sinyali tazelendiğinde kullanıcının yazdığı
+   * silinmemeli.
+   */
+  private formKey: string | null = null;
+
   constructor() {
-    // Diyalog her açıldığında form gelen girdiye göre sıfırlanır; önceki
-    // kaydın artıkları yeni forma sızmasın.
+    // Diyalog AÇILDIĞINDA form gelen girdiye göre sıfırlanır; önceki kaydın
+    // artıkları yeni forma sızmasın. Açılış boyunca bir daha kurulmaz.
     effect(() => {
       if (!this.visible()) {
+        this.formKey = null;
         return;
       }
 
-      const module = this.module();
+      untracked(() => {
+        const module = this.module();
+        const key = module ? `edit:${module.id}` : 'create';
 
-      this.form.reset({
-        code: module?.code ?? '',
-        name: module?.name ?? '',
-        icon: module?.icon ?? '',
-        description: module?.description ?? '',
-        isActive: module?.isActive ?? true,
+        if (this.formKey === key) {
+          return;
+        }
+        this.formKey = key;
+
+        this.form.reset({
+          code: module?.code ?? '',
+          name: module?.name ?? '',
+          icon: module?.icon ?? '',
+          description: module?.description ?? '',
+          isActive: module?.isActive ?? true,
+        });
+
+        if (module) {
+          this.form.controls.code.disable();
+        } else {
+          this.form.controls.code.enable();
+        }
       });
-
-      if (module) {
-        this.form.controls.code.disable();
-      } else {
-        this.form.controls.code.enable();
-      }
     });
   }
 

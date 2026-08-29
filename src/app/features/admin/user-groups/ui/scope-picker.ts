@@ -34,7 +34,12 @@ import { IdName } from '@core/api/api-result.model';
             <button type="button" class="linkbtn" [disabled]="saving()" (click)="revert.emit()">
               Geri al
             </button>
-            <button type="button" class="btn btn--primary btn--sm" [disabled]="saving()" (click)="save.emit()">
+            <button
+              type="button"
+              class="btn btn--primary btn--sm"
+              [disabled]="saving()"
+              (click)="save.emit()"
+            >
               Kaydet
             </button>
           }

@@ -1,0 +1,63 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '420px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    @if (description()) {
+      <p class="form__lead">{{ description() }}</p>
+    }
+
+    <div class="form__field">
+      <label class="form__label" for="close-date">Bitiş tarihi</label>
+      <input id="close-date" pInputText type="date" formControlName="endDate" />
+      @if (form.controls.endDate.touched && form.controls.endDate.invalid) {
+        <p class="form__error">Bitiş tarihi zorunludur.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="close-reason">Sebep</label>
+      <p-select
+        inputId="close-reason"
+        [options]="reasonOptions"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="endReason"
+        placeholder="Sebep seçin"
+        appendTo="body"
+        class="form__select"
+      />
+      <p class="form__help">
+        Sebep zorunludur: kapanmış bir kaydın neden kapandığı sonradan öğrenilemez.
+      </p>
+
+      @if (form.controls.endReason.touched && form.controls.endReason.invalid) {
+        <p class="form__error">Sebep seçilmelidir.</p>
+      }
+    </div>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button
+        type="submit"
+        class="btn"
+        [class.btn--danger]="danger()"
+        [class.btn--primary]="!danger()"
+        [disabled]="saving()"
+      >
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ confirmLabel() }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

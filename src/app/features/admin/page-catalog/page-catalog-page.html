@@ -8,7 +8,12 @@
       Yenile
     </button>
 
-    <button type="button" class="btn btn--primary" *appHasAction="'CREATE'; operation: 'PAGE'" (click)="openCreate()">
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'PAGE'"
+      (click)="openCreate()"
+    >
       <i class="pi pi-plus" aria-hidden="true"></i>
       Sayfa
     </button>
@@ -200,7 +205,9 @@
     <aside class="app-card board__detail" aria-label="Seçili sayfa">
       @if (selected(); as page) {
         <header class="detail__head">
-          <span class="detail__icon"><i class="{{ page.icon || 'pi pi-file' }}" aria-hidden="true"></i></span>
+          <span class="detail__icon"
+            ><i class="{{ page.icon || 'pi pi-file' }}" aria-hidden="true"></i
+          ></span>
           <div class="detail__identity">
             <h3 class="detail__name">{{ page.name }}</h3>
             <code class="detail__route">{{ page.route }}</code>
@@ -260,7 +267,11 @@
                     </span>
 
                     @if (action.endpoint) {
-                      <code class="ops__endpoint" [pTooltip]="action.endpoint" tooltipPosition="top">
+                      <code
+                        class="ops__endpoint"
+                        [pTooltip]="action.endpoint"
+                        tooltipPosition="top"
+                      >
                         {{ action.endpoint }}
                       </code>
                     }
@@ -271,8 +282,8 @@
           } @empty {
             <p class="detail__note detail__note--warn">
               <i class="pi pi-info-circle" aria-hidden="true"></i>
-              Bu sayfada işlem yok: menüde görünmez ve yetkilendirilemez.
-              İşlem Kataloğu ekranından tanımlayın.
+              Bu sayfada işlem yok: menüde görünmez ve yetkilendirilemez. İşlem Kataloğu ekranından
+              tanımlayın.
             </p>
           }
         </section>

@@ -130,13 +130,13 @@ export class RoleAdminStore {
     }
   }
 
-async selectRole(roleId: number): Promise<void> {
+  async selectRole(roleId: number): Promise<void> {
     this._selectedRoleId.set(roleId);
     await this.loadMatrix(roleId);
   }
 
   private async loadMatrix(roleId: number): Promise<void> {
-this._matrixLoading.set(true);
+    this._matrixLoading.set(true);
 
     try {
       this.applyMatrix(await firstValueFrom(this.api.getMatrix(roleId)));
@@ -255,7 +255,7 @@ this._matrixLoading.set(true);
   }
 
   private async runCommand(action: () => Promise<string>): Promise<boolean> {
-this._saving.set(true);
+    this._saving.set(true);
     this._feedback.set(null);
 
     try {

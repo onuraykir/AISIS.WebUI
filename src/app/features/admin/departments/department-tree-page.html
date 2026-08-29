@@ -1,0 +1,334 @@
+<app-admin-toolbar
+  title="Birimler"
+  description="Fakülte, enstitü, bölüm, program ve idari birimlerin ağacı. Öğrenci, öğretim elemanı ve idari personel şeritlerinin tek buluşma noktası; sayaçlar yalnızca açık bağları sayar."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'DEPARTMENT'"
+      (click)="openCreate()"
+    >
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Birim
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.total() }}</span>
+      <span class="stats__label">birim</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.academicCount() }}</span>
+      <span class="stats__label">akademik</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.administrativeCount() }}</span>
+      <span class="stats__label">idari</span>
+    </div>
+    @if (store.inactiveCount() > 0) {
+      <div class="stats__item stats__item--attention">
+        <span class="stats__value">{{ store.inactiveCount() }}</span>
+        <span class="stats__label">pasif</span>
+      </div>
+    }
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Birim ağacı yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board">
+    <!-- ── Ağaç ── -->
+    <section class="app-card board__main" aria-label="Birim ağacı">
+      <header class="tree__head">
+        <h3 class="pane__title"><i class="pi pi-sitemap" aria-hidden="true"></i> Birim Ağacı</h3>
+
+        <p-iconfield class="tree__search">
+          <p-inputicon class="pi pi-search" />
+          <input
+            pInputText
+            type="text"
+            placeholder="Ad veya kod ara…"
+            aria-label="Birim ara"
+            [value]="store.search()"
+            (input)="onSearch($event)"
+          />
+        </p-iconfield>
+      </header>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4, 5]; track row) {
+            <p-skeleton height="42px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (row of store.rows(); track row.node.id) {
+            <li>
+              <div
+                class="row"
+                [class.row--selected]="selected()?.id === row.node.id"
+                [class.row--passive]="!row.node.isActive"
+              >
+                <button
+                  type="button"
+                  class="row__main"
+                  [style.paddingInlineStart.px]="6 + row.depth * 18"
+                  (click)="select(row.node)"
+                >
+                  @if (row.hasChildren) {
+                    <i
+                      class="tree__chevron pi"
+                      [class.pi-chevron-down]="row.expanded"
+                      [class.pi-chevron-right]="!row.expanded"
+                      (click)="store.toggle(row.node.id); $event.stopPropagation()"
+                      aria-hidden="true"
+                    ></i>
+                  } @else {
+                    <i class="tree__chevron tree__chevron--leaf" aria-hidden="true"></i>
+                  }
+
+                  <i
+                    class="row__icon pi"
+                    [class.pi-building]="isAcademic(row.node)"
+                    [class.pi-briefcase]="!isAcademic(row.node)"
+                    aria-hidden="true"
+                  ></i>
+
+                  <span class="row__text">
+                    <span class="row__name">{{ row.node.name }}</span>
+                    <span class="row__sub">{{ levelLabel(row.node) }}</span>
+                  </span>
+
+                  <span class="row__meta">
+                    <code class="row__code">{{ row.node.code }}</code>
+
+                    @if (memberCount(row.node) > 0) {
+                      <span
+                        class="row__badge row__badge--members"
+                        pTooltip="Açık öğrenci, akademik ve idari bağların toplamı"
+                        tooltipPosition="top"
+                      >
+                        {{ memberCount(row.node) }}
+                      </span>
+                    }
+
+                    @if (!row.node.isActive) {
+                      <span class="row__badge row__badge--passive">Pasif</span>
+                    }
+                  </span>
+                </button>
+
+                <div class="row__actions">
+                  <button
+                    type="button"
+                    class="row__action"
+                    pTooltip="Düzenle"
+                    tooltipPosition="top"
+                    aria-label="Düzenle"
+                    *appHasAction="'UPDATE'; operation: 'DEPARTMENT'"
+                    [disabled]="store.saving()"
+                    (click)="openEdit(row.node)"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    pTooltip="Sil"
+                    tooltipPosition="top"
+                    aria-label="Sil"
+                    *appHasAction="'DELETE'; operation: 'DEPARTMENT'"
+                    [disabled]="store.saving()"
+                    (click)="confirmDelete(row.node)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-sitemap state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">
+                {{ store.search() ? 'Eşleşen birim yok' : 'Birim yok' }}
+              </h3>
+              <p class="state__text">
+                {{
+                  store.search()
+                    ? 'Aramayı değiştirin.'
+                    : 'Öğrenci ve personel kayıtları birime bağlanır; önce bir birim oluşturun.'
+                }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Seçili birim ── -->
+    <aside class="app-card board__detail" aria-label="Seçili birim">
+      @if (selected(); as node) {
+        <header class="detail__head">
+          <span class="detail__icon">
+            <i
+              class="pi"
+              [class.pi-building]="isAcademic(node)"
+              [class.pi-briefcase]="!isAcademic(node)"
+              aria-hidden="true"
+            ></i>
+          </span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ node.name }}</h3>
+            <code class="detail__code">{{ node.code }}</code>
+          </div>
+        </header>
+
+        <dl class="detail__facts">
+          <div>
+            <dt>Tip</dt>
+            <dd>{{ typeLabel(node) }}</dd>
+          </div>
+          <div>
+            <dt>Seviye</dt>
+            <dd>{{ levelLabel(node) }}</dd>
+          </div>
+          <div>
+            <dt>Öğrenci</dt>
+            <dd>{{ node.studentCount }}</dd>
+          </div>
+          <div>
+            <dt>Öğretim elemanı</dt>
+            <dd>{{ node.instructorCount }}</dd>
+          </div>
+          <div>
+            <dt>İdari personel</dt>
+            <dd>{{ node.staffCount }}</dd>
+          </div>
+          <div>
+            <dt>Ders</dt>
+            <dd>{{ node.courseCount }}</dd>
+          </div>
+        </dl>
+
+        <p class="detail__note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Sayaçlar yalnızca <strong>açık</strong> bağları gösterir; geçmiş kayıtlar dahil değildir.
+        </p>
+
+        @if (!node.isActive) {
+          <p class="detail__note detail__note--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Bu birim pasif: yeni kayıt eklenemez, mevcut bağlar kapanmaz.
+          </p>
+        }
+
+        <section class="detail__section">
+          <h4 class="detail__section-title">Taşıma</h4>
+
+          <div class="detail__move">
+            <p-select
+              [options]="moveOptions()"
+              optionLabel="label"
+              optionValue="id"
+              [ngModel]="moveTarget()"
+              (ngModelChange)="moveTarget.set($event)"
+              [filter]="true"
+              filterBy="label"
+              [disabled]="store.saving()"
+              placeholder="Üst birim seçin"
+              class="detail__select"
+              appendTo="body"
+            />
+
+            <button
+              type="button"
+              class="btn btn--ghost"
+              *appHasAction="'ASSIGN'; operation: 'DEPARTMENT'"
+              [disabled]="store.saving() || !moveChanged()"
+              (click)="applyMove()"
+            >
+              Uygula
+            </button>
+          </div>
+
+          <p class="detail__note">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Birim kendi alt ağacının altına taşınamaz; liste zaten onları göstermez.
+          </p>
+        </section>
+
+        <footer class="detail__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasAction="'UPDATE'; operation: 'DEPARTMENT'"
+            [disabled]="store.saving()"
+            (click)="openEdit(node)"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i> Düzenle
+          </button>
+
+          <button
+            type="button"
+            class="btn btn--danger"
+            *appHasAction="'DELETE'; operation: 'DEPARTMENT'"
+            [disabled]="store.saving() || !!deleteBlockedReason()"
+            [pTooltip]="deleteBlockedReason() ?? ''"
+            [tooltipDisabled]="!deleteBlockedReason()"
+            tooltipPosition="top"
+            (click)="confirmDelete(node)"
+          >
+            <i class="pi pi-trash" aria-hidden="true"></i> Sil
+          </button>
+        </footer>
+
+        @if (deleteBlockedReason(); as reason) {
+          <p class="detail__note detail__note--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i> {{ reason }}
+          </p>
+        }
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Birim seçilmedi</h3>
+          <p class="state__text">
+            Künyesini görmek, taşımak veya düzenlemek için soldan bir birim seçin.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<app-department-form-dialog
+  [(visible)]="dialogOpen"
+  [department]="departmentInDialog()"
+  [parentOptions]="parentOptions()"
+  [saving]="store.saving()"
+  (save)="onDialogSave($event)"
+/>
+
+<p-confirmdialog />

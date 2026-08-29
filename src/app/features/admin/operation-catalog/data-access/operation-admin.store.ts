@@ -245,7 +245,11 @@ export class OperationAdminStore {
    * Sunucu kısmi liste kabul etmediği için TÜM sıra gönderilir.
    */
   async shiftDefinition(definition: ActionDefinition, direction: -1 | 1): Promise<boolean> {
-    const ordered = reorder(this._catalog().map((item) => item.id), definition.id, direction);
+    const ordered = reorder(
+      this._catalog().map((item) => item.id),
+      definition.id,
+      direction,
+    );
     if (ordered === null) {
       return false;
     }
@@ -291,7 +295,11 @@ export class OperationAdminStore {
       return false;
     }
 
-    const ordered = reorder(page.operations.map((item) => item.id), operation.id, direction);
+    const ordered = reorder(
+      page.operations.map((item) => item.id),
+      operation.id,
+      direction,
+    );
     if (ordered === null) {
       return false;
     }

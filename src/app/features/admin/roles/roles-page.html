@@ -8,7 +8,12 @@
       Yenile
     </button>
 
-    <button type="button" class="btn btn--primary" *appHasAction="'CREATE'; operation: 'ROLE'" (click)="openCreate()">
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'ROLE'"
+      (click)="openCreate()"
+    >
       <i class="pi pi-plus" aria-hidden="true"></i>
       Rol
     </button>
@@ -275,7 +280,9 @@
                             class="mact"
                             [class.mact--on]="store.isGranted(action.operationActionId)"
                             [attr.aria-pressed]="store.isGranted(action.operationActionId)"
-                            [pTooltip]="action.endpoint ?? 'Uç noktası yok — adres eşleştirmesine girmez'"
+                            [pTooltip]="
+                              action.endpoint ?? 'Uç noktası yok — adres eşleştirmesine girmez'
+                            "
                             tooltipPosition="top"
                             [disabled]="store.saving()"
                             (click)="store.toggle(action.operationActionId)"
@@ -284,7 +291,10 @@
                               class="mcheck mcheck--sm"
                               [class.mcheck--on]="store.isGranted(action.operationActionId)"
                             >
-                              <i class="pi" [class.pi-check]="store.isGranted(action.operationActionId)"></i>
+                              <i
+                                class="pi"
+                                [class.pi-check]="store.isGranted(action.operationActionId)"
+                              ></i>
                             </span>
 
                             <span class="mact__name">{{ action.name }}</span>

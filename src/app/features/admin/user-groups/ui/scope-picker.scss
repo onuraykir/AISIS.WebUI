@@ -95,7 +95,10 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s,
+    color 0.12s;
 }
 
 .schip i {

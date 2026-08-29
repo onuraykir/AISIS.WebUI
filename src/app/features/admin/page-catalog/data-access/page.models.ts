@@ -31,8 +31,8 @@ export interface PageListItem {
   readonly actionCount: number;
 
   /**
-   * Uç noktası olmayan eylem sayısı. Salt görünürlük yetkileri (VIEW) ile ucu
-   * henüz yazılmamış eylemleri birlikte sayar; ikincisi gözden kaçmamalı.
+   * Uç noktası olmayan eylem sayısı. Havuzda salt görünürlük yetkisi kalmadığı
+   * için bu sayı artık doğrudan "ucu yazılmamış eylem" demektir; sıfır olmalı.
    */
   readonly unmappedActionCount: number;
 

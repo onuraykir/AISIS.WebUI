@@ -204,7 +204,7 @@ gelir. `parse`/`confirm` ayrı eylemlerdir, ek bir tabloya gerek kalmamıştır.
 
 | Tablo | Not |
 |---|---|
-| `ActionDefinition` | Ortak eylem havuzu. `ProcessDefinition`'ın yerini aldı, satırlar aynı (VIEW, CREATE…). |
+| `ActionDefinition` | Ortak eylem havuzu. `ProcessDefinition`'ın yerini aldı. YALNIZCA YAZMA eylemleri — `VIEW` yoktur (K-G). |
 | `PageOperation` | Id, PageId, Code, Name, Description, DisplayOrder, IsActive |
 | `OperationAction` | Id, PageOperationId, ActionDefinitionId, Endpoint?, HttpMethod?, DisplayOrder, IsActive |
 | `RolePermission` | `OperationActionId`'ye bağlanır |
@@ -258,12 +258,16 @@ Arayüz tarafındaki karşılığı doğrudan budur: sayfa açıldığında men�
 ```
 MenuPageDto {
   id, name, route, icon, displayOrder,
-  operations: [ { code, name, actions: ["VIEW", "CREATE"] } ]
+  operations: [ { code, name, actions: ["CREATE", "UPDATE"] } ]
 }
 ```
 
-**Sayfa görünürlük kuralı:** sayfa menüde görünür ⟺ **herhangi bir işleminde** `VIEW`
-yetkisi var.
+**Sayfa görünürlük kuralı:** sayfa menüde görünür ⟺ **kök modülü kullanıcının grubunun
+kapsamında** (`UserGroupModule`). İzin tablosuna bakılmaz.
+
+`operations` **boş gelebilir ve bu normaldir**: sayfayı görmek kapsamdan, düğmeler
+rolden gelir. Yazma yetkisi olmayan kullanıcı sayfayı salt okunur görür. Gerekçe:
+`AuthenticationSolution/docs/MODUL3-KAYIT-ANALIZI.md` §2.8 **K-G**.
 
 ### Backend dosyaları
 
@@ -303,9 +307,9 @@ yetkisi var.
 - `operation-catalog/ui/action-dictionary-dialog` — salt sunum; sözlüğü listeler,
   komutları olay olarak yayar.
 
-`UNAVAILABLE`: eylemin arkasında çağrılacak bir uç yok. İki hâli birden kapsar — salt
-görünürlük yetkileri (`VIEW`) ve ucu henüz yazılmamış eylemler. Sunucudaki adres
-eşleştirmesine girmezler; ikisi de gözden kaçmamalı diye rozetle işaretlenir.
+`UNAVAILABLE`: eylemin arkasında çağrılacak bir uç yok. Havuzda salt görünürlük
+yetkisi kalmadığı için bu rozet artık tek şey demektir — **ucu henüz yazılmamış
+eylem**. Sunucudaki adres eşleştirmesine girmez; gözden kaçmasın diye işaretlenir.
 
 ### Seed
 
@@ -418,6 +422,152 @@ esas alındı — kural doldurmak için uydurulmuş kısa parolalar daha zayıf.
 
 ---
 
+## 3.7 Üç şeritli kayıt şeması (Modül 3 — DataAccessLayer hazır)
+
+> 27 Ağustos 2026. Kaynak: "Üniversite Kayıt Şeması" spesifikasyonu. Belge PostgreSQL
+> varsayıyordu; SQL Server'a ve projenin kendi kalıplarına uyarlandı.
+
+### Yapı
+
+```
+Person ─1:N─ Student    ─1:N─ StudentInDepartment    ─N:1─┐
+       ─1:N─ Instructor ─1:N─ InstructorInDepartment ─N:1─┼─ Department (self-ref)
+       ─1:N─ Staff      ─1:N─ StaffInDepartment      ─N:1─┘
+```
+
+**Merkezdeki fikir: kalıtım yok, koşullu kolon yok.** `Level` ve `EnrollmentKind`
+`NOT NULL` olabiliyor çünkü bulundukları tabloda her satır zaten bir öğrenci bağı.
+"Öğrenci satırına dekanlık görevi verilmiş" durumu şemada ifade *edilemiyor*.
+
+**`Person → rol` bağı 1:N**, eskiden 1:0..1 idi. Kişi lisansını bitirip yıllar sonra
+yüksek lisansa başlarsa ikinci bir `Student` satırı açılır, yeni numarayla. Şeritler
+arasında kalıtım olmadığı için aynı kişi eşzamanlı olarak üçünde birden bulunabilir —
+idari personelin ders saati ücretli ders vermesi tipik örnek.
+
+### Alan nereye yazılır
+
+| Katman | Ne taşır | Örnek |
+|---|---|---|
+| `Person` | Role bağlı olmayan | TCKN, ad, doğum tarihi, iletişim |
+| Rol kaydı | Role bağlı, **birime göre değişmeyen** | öğrenci numarası, sicil, unvan, kadro tipi |
+| İlişki tablosu | Yalnızca **o birimle olan bağa** ait | görev, seviye, anadal/ÇAP, başlangıç–bitiş |
+
+İki soruyla ayrışır: *(1)* "İkinci bir bölüme kaydolunca bu alan farklı değer alır mı?"
+→ ilişkiye. *(2)* "Yıllar sonra aynı role yeniden girerse yeni değer alır mı?"
+→ rol kaydına.
+
+### Uyarlamalar
+
+| Belge (PostgreSQL) | AISIS karşılığı | Neden |
+|---|---|---|
+| `Guid` PK | `int` (`AISISBaseEntity`) | Tüm model int; Guid her tabloyu kırardı |
+| `EXCLUDE USING gist` + `daterange` | **Karşılığı yok** → aşağıya bak | SQL Server'da bu kısıt tipi yok |
+| Hard delete | Soft delete korundu, index'ler `[IsDeleted] = 0` filtreli | Proje kuralı |
+| `StudentDepartment` | `StudentInDepartment` | Mevcut adlandırma (`CourseInDepartment`…) |
+| `Title` (enum) | Mevcut `AcademicTitle` (string) korundu | Var olan alan; ikinci bir unvan alanı açılmadı |
+
+### Tarih çakışması — SQL Server'da ne yapabildik
+
+Belgenin bütünlük iddiasının belkemiği `EXCLUDE USING gist` idi; SQL Server'da yok.
+Yerine konan:
+
+```
+UX_StudentInDepartments_Open     (StudentId, DepartmentId)         WHERE EndDate IS NULL AND IsDeleted = 0
+UX_InstructorInDepartments_Open  (InstructorId, DepartmentId, Duty) WHERE EndDate IS NULL AND IsDeleted = 0
+UX_StaffInDepartments_Open       (StaffId, DepartmentId, Duty)      WHERE EndDate IS NULL AND IsDeleted = 0
+UX_StudentInDepartments_Primary  (StudentId)                        WHERE EnrollmentKind = 1 AND EndDate IS NULL AND IsDeleted = 0
+UX_InstructorInDepartments_Primary / UX_StaffInDepartments_Primary  WHERE IsPrimary = 1 AND EndDate IS NULL AND IsDeleted = 0
+```
+
+> Öğrenci şeridinde `IsPrimary` kolonu **yok**: anadal `EnrollmentKind`'dan
+> okunuyor, iki kolon çelişemesin diye. Personel şeritlerinde duruyor — orada
+> "kadrosunun bulunduğu birim" demek ve türetilecek bir tür alanı yok. Gerekçe:
+> `AuthenticationSolution/docs/MODUL3-KAYIT-ANALIZI.md` §2.8 **K-F**.
+
+**Sınır açıkça bilinsin:** bu index'ler yalnızca **açık** bağları korur. Kapanmış iki
+kaydın tarih aralıklarının çakışması (2020–2022 ile 2021–2023) veritabanında
+yakalanmaz — o denetim servis katmanına düşer. Bunu bilerek kabul ettik; alternatifi
+trigger yazmaktı ve trigger bu projede hiç kullanılmıyor.
+
+Check kısıtları:
+
+```
+CK_*InDepartments_End     kapanmış bağın sebebi olmalı, açığın olmamalı; EndDate >= StartDate
+CK_Students_Status_EndDate  Status Active/OnLeave ise EndDate boş, değilse dolu
+CK_Students_GraduationDate  mezuniyet tarihi yalnızca Status = Graduated iken dolar
+CK_Departments_Parent_NotSelf  birim kendi üstü olamaz (daha derin döngüyü servis engeller)
+```
+
+### Değişen alanlar
+
+**Eklendi:** `Person.NationalId` (tekil), `BirthDate`, `Gender` · `Student.AdmissionDate`,
+`Status`, `EndDate` · `Instructor.RegistryNumber` (tekil), `IsFullTime`, `HireDate`,
+`EndDate` · `Department.Code` (tekil), `Level`, `ParentDepartmentId`, `IsActive` ·
+ilişki tablolarına `Duty`/`Level`/`EnrollmentKind`, `StartDate`, `EndDate`, `EndReason`
+ve personel şeritlerinde `IsPrimary`.
+
+**Yeni tablolar:** `Staff`, `StaffInDepartment`, `StudentInDepartment`.
+
+**Kaldırılan üç alan** (hiçbiri kod tarafından kullanılmıyordu):
+
+| Kaldırılan | Yerine | Neden |
+|---|---|---|
+| `Person.DepartmentId` | ilişki tabloları | Kişi bir birime değil, rol kaydı üzerinden birim*ler*e bağlanır |
+| `Student.IsDoubleMajor` | `StudentInDepartment.EnrollmentKind` | ÇAP bir *bölüm bağı* özelliğidir; bayrak "hangi bölümde ÇAP?" sorusunu cevaplayamıyordu |
+| `Student.IsLateralTransfer` | — | Kabul yolu bir *bağ türü* değil; `EnrollmentKind` yalnızca "bu bağ ne?" sorusunu cevaplar (K-F). Gerekirse ayrı alan olarak eklenir |
+
+`Student.GraduationDate` **korundu** ama artık `Status = Graduated` iken dolar ve o
+durumda `EndDate` ile aynı gündür; check kısıtı bunu zorluyor.
+
+### Enum'lar
+
+`Enums/` altında: `Gender`, `DepartmentLevel`, `StudentLevel`, `EnrollmentKind`,
+`StudentStatus`, `EnrollmentEndReason`, `AcademicDuty`, `AdministrativeDuty`,
+`AssignmentEndReason` (+ mevcut `DepartmentType`).
+
+### Yapılmayan: `DepartmentMemberships` view
+
+Belge, rolden bağımsız sorgular için üç şeridi birleştiren bir view öneriyor. View
+oluşturmak migration'a ham SQL yazmayı gerektiriyor; migration'lar Onur'da olduğu için
+eklenmedi. Gerektiğinde migration'a şu blok konur:
+
+```sql
+CREATE VIEW [core].[DepartmentMemberships] AS
+SELECT sd.Id, s.PersonId, sd.DepartmentId, 'Student' AS Kind,
+       sd.[Level] AS Detail,
+       CAST(CASE WHEN sd.EnrollmentKind = 1 THEN 1 ELSE 0 END AS bit) AS IsPrimary,
+       sd.StartDate, sd.EndDate
+FROM   core.StudentInDepartments sd
+JOIN   core.Students s ON s.Id = sd.StudentId AND s.IsDeleted = 0
+WHERE  sd.IsDeleted = 0
+UNION ALL
+SELECT idp.Id, i.PersonId, idp.DepartmentId, 'Instructor',
+       idp.Duty, idp.IsPrimary, idp.StartDate, idp.EndDate
+FROM   core.InstructorInDepartments idp
+JOIN   core.Instructors i ON i.Id = idp.InstructorId AND i.IsDeleted = 0
+WHERE  idp.IsDeleted = 0
+UNION ALL
+SELECT stp.Id, st.PersonId, stp.DepartmentId, 'Staff',
+       stp.Duty, stp.IsPrimary, stp.StartDate, stp.EndDate
+FROM   core.StaffInDepartments stp
+JOIN   core.Staffs st ON st.Id = stp.StaffId AND st.IsDeleted = 0
+WHERE  stp.IsDeleted = 0;
+```
+
+Rol bazlı ekranlar view'a hiç uğramaz — tek tablo, tek join.
+
+### Doğrulananlar
+
+- Çözüm derleniyor (0 hata).
+- `dotnet ef dbcontext script` ile **DDL üretildi**: cascade path çakışması yok. Bu
+  projede bir kez ısırmış bir tuzaktı (bkz. §5), o yüzden model kurulmasıyla
+  yetinilmedi.
+- Seed'deki üç birime `Code` verildi (`BLM`, `END`, `BIDB`). Verilmeseydi üçü de boş
+  kod alacak ve `IX_Departments_Code` filtreli unique index'i `database update`
+  sırasında patlayacaktı.
+
+---
+
 ## 4. Açık işler
 
 ### 4.1 Hemen sıradakiler
@@ -451,6 +601,19 @@ esas alındı — kural doldurmak için uydurulmuş kısa parolalar daha zayıf.
       Şifre ucunun doğrulaması: yanlış şifre ve olmayan kullanıcı **aynı** genel
       mesajı döndü (kullanıcı adı sızdırmıyor); doğru şifre + kısa yeni şifre
       uzunluk kuralına düştü — yani PBKDF2 doğrulaması gerçek hash'e karşı çalışıyor.
+
+- [ ] **Modül 3 için migration üretilmedi.** `has-pending-model-changes` kaymayı
+      bildiriyor — üç şeritli şema (§3.7) yeni tablolar, kolonlar ve kısıtlar getiriyor.
+      `Persons`, `Students`, `Instructors`, `Departments` tablolarına kolon ekleniyor;
+      `Staffs`, `StaffInDepartments`, `StudentInDepartments` yeni. `InstructorInDepartments`
+      **şema değiştiriyor** (`sbpo` → `core`), yani taşınacak.
+
+- [ ] **Servis katmanı denetimleri (Modül 3).** Veritabanı 14 kuralı garanti ediyor;
+      **15 kural koda düşüyor**. Tam liste, öncelik sırası ve "yazılmazsa ne olur"
+      analizi: `AuthenticationSolution/docs/MODUL3-KAYIT-ANALIZI.md`.
+      Kırmızı olanlar: kapanmış bağ aralıklarının çakışması (M3), birim ağacında
+      döngü (D4/D7), soft delete'in elle kaskadı (S2/D13), rol kapanınca açık
+      bağların kapatılması (E2).
 
 - [ ] **Kimlik doğrulama — kalan kısım.** Şifre altyapısı ve süper kullanıcı
       yapıldı (§3.6). Kalan: JWT login, refresh token, lockout, `UserContext`.

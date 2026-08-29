@@ -1,0 +1,61 @@
+/* Ortak yerleşim (stats, board, row, state, detail) src/styles/_admin.scss içinde.
+   Burada yalnızca Birim Ağacı'na özgü olanlar var. */
+
+.board__main,
+.board__detail {
+  padding: 14px;
+  min-height: 340px;
+}
+
+.tree__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.tree__head .pane__title {
+  margin: 0;
+}
+
+.tree__search {
+  flex: 1 1 180px;
+  max-width: 280px;
+}
+
+.tree__search input {
+  width: 100%;
+}
+
+/* Girinti satırın kendi padding'iyle veriliyor; chevron sabit genişlikte kalsın
+   ki farklı derinlikteki adlar hizadan kaymasın. */
+.tree__chevron {
+  flex: 0 0 14px;
+  width: 14px;
+  font-size: 10px;
+  color: var(--p-text-muted-color);
+  cursor: pointer;
+}
+
+.tree__chevron--leaf {
+  cursor: default;
+}
+
+.row__code {
+  padding: 1px 6px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 4px;
+  color: var(--p-text-muted-color);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+/* Açık bağ sayısı: birimin "dolu" olup olmadığını bir bakışta verir. */
+.row__badge--members {
+  background: color-mix(in srgb, #16a34a 14%, transparent);
+  color: #15803d;
+}

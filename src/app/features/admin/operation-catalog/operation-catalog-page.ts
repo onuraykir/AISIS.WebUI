@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialog } from 'primeng/confirmdialog';
@@ -14,11 +21,7 @@ import { PageListItem } from '../page-catalog/data-access/page.models';
 import { AdminToolbar } from '../shared/admin-toolbar/admin-toolbar';
 import { CodeNameDialog, CodeNameValue } from '../shared/code-name-dialog/code-name-dialog';
 import { OperationAdminStore, PageFilter } from './data-access/operation-admin.store';
-import {
-  ActionDefinition,
-  OperationAction,
-  PageOperation,
-} from './data-access/operation.models';
+import { ActionDefinition, OperationAction, PageOperation } from './data-access/operation.models';
 import { ActionDictionaryDialog } from './ui/action-dictionary-dialog';
 import { OperationActionDialog, OperationActionFormValue } from './ui/operation-action-dialog';
 

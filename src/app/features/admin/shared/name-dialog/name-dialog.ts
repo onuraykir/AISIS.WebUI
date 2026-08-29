@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, model, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  input,
+  model,
+  output,
+  untracked,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { Dialog } from 'primeng/dialog';
@@ -122,14 +131,30 @@ export class NameDialog {
     name: ['', [Validators.required, Validators.maxLength(100)]],
   });
 
+  /**
+   * Diyalog bu açılışta kuruldu mu?
+   *
+   * Sıfırlama YALNIZCA açılışta yapılmalı: `value()` de izlendiği için, o sinyal
+   * tazelendiğinde kullanıcının yazdığı ad silinip eski değere dönüyordu.
+   */
+  private opened = false;
+
   constructor() {
-    // Diyalog her açıldığında gelen değere göre sıfırlanır.
+    // Diyalog AÇILDIĞINDA gelen değere göre sıfırlanır, sonra dokunulmaz.
     effect(() => {
       if (!this.visible()) {
+        this.opened = false;
         return;
       }
 
-      this.form.reset({ name: this.value() });
+      untracked(() => {
+        if (this.opened) {
+          return;
+        }
+        this.opened = true;
+
+        this.form.reset({ name: this.value() });
+      });
     });
   }
 

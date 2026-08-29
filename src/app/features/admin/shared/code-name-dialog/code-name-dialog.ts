@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, model, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  model,
+  output,
+  untracked,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { Dialog } from 'primeng/dialog';
@@ -196,7 +206,9 @@ export class CodeNameDialog {
   readonly value = input<CodeNameValue | null>(null);
 
   readonly codePlaceholder = input('EXPORT');
-  readonly codeHelp = input('Yetki kontrollerinde kullanılan sabit anahtar. Yalnızca A–Z, 0–9 ve alt çizgi.');
+  readonly codeHelp = input(
+    'Yetki kontrollerinde kullanılan sabit anahtar. Yalnızca A–Z, 0–9 ve alt çizgi.',
+  );
   readonly namePlaceholder = input('');
   readonly descriptionPlaceholder = input('Bu ne yapar?');
 
@@ -217,26 +229,45 @@ export class CodeNameDialog {
     isActive: [true],
   });
 
+  /**
+   * Formun en son hangi kayıt için kurulduğu. Sıfırlama YALNIZCA diyalog
+   * açıldığında yapılmalı; kayıt sinyali tazelendiğinde kullanıcının yazdığı
+   * silinmemeli.
+   *
+   * Kimlik olarak KOD kullanılıyor: bu diyalogda kod değişmez tutamaçtır ve
+   * düzenlenirken kilitlenir, dolayısıyla açılış boyunca sabittir.
+   */
+  private formKey: string | null = null;
+
   constructor() {
     effect(() => {
       if (!this.visible()) {
+        this.formKey = null;
         return;
       }
 
-      const value = this.value();
+      untracked(() => {
+        const value = this.value();
+        const key = value ? `edit:${value.code}` : 'create';
 
-      this.form.reset({
-        code: value?.code ?? '',
-        name: value?.name ?? '',
-        description: value?.description ?? '',
-        isActive: value?.isActive ?? true,
+        if (this.formKey === key) {
+          return;
+        }
+        this.formKey = key;
+
+        this.form.reset({
+          code: value?.code ?? '',
+          name: value?.name ?? '',
+          description: value?.description ?? '',
+          isActive: value?.isActive ?? true,
+        });
+
+        if (value) {
+          this.form.controls.code.disable();
+        } else {
+          this.form.controls.code.enable();
+        }
       });
-
-      if (value) {
-        this.form.controls.code.disable();
-      } else {
-        this.form.controls.code.enable();
-      }
     });
   }
 

@@ -3,11 +3,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { ApiFailure } from '@core/api/api-result.model';
 import { ModuleAdminApi } from './module-admin.api';
-import {
-  ModuleCreateCommand,
-  ModuleTreeNode,
-  ModuleUpdateCommand,
-} from './module.models';
+import { ModuleCreateCommand, ModuleTreeNode, ModuleUpdateCommand } from './module.models';
 
 /** Ekranın kullanıcıya göstereceği tek seferlik geri bildirim. */
 export interface StoreFeedback {
@@ -83,7 +79,7 @@ export class ModuleTreeStore {
     }
   }
 
-async create(command: ModuleCreateCommand): Promise<boolean> {
+  async create(command: ModuleCreateCommand): Promise<boolean> {
     return this.runCommand(async () => {
       const created = await firstValueFrom(this.api.create(command));
       await this.load();
@@ -159,7 +155,7 @@ async create(command: ModuleCreateCommand): Promise<boolean> {
    * `true` dönerse işlem başarılı.
    */
   private async runCommand(action: () => Promise<string>): Promise<boolean> {
-this._saving.set(true);
+    this._saving.set(true);
     this._feedback.set(null);
 
     try {
