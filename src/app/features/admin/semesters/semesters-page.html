@@ -1,0 +1,275 @@
+<app-admin-toolbar
+  title="Dönemler"
+  description="Akademik dönemler. Ders açılışları, notlar ve çıktı hesapları bu bağlamda yaşar; aynı anda yalnızca bir dönem açık, bir dönem güncel olabilir."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'SEMESTER'"
+      (click)="openCreate()"
+    >
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Dönem
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.total() }}</span>
+      <span class="stats__label">dönem</span>
+    </div>
+    @if (store.currentSemester(); as current) {
+      <div class="stats__item">
+        <span class="stats__value">{{ current.code }}</span>
+        <span class="stats__label">güncel</span>
+      </div>
+    }
+    @if (store.openSemester(); as open) {
+      <div class="stats__item">
+        <span class="stats__value">{{ open.code }}</span>
+        <span class="stats__label">açık</span>
+      </div>
+    }
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Dönem listesi yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board">
+    <!-- ── Liste ── -->
+    <section class="app-card board__main" aria-label="Dönem listesi">
+      <header class="list__head">
+        <h3 class="pane__title"><i class="pi pi-calendar" aria-hidden="true"></i> Dönemler</h3>
+
+        <app-admin-filter-bar
+          placeholder="Kod veya ad…"
+          [search]="store.search()"
+          (searchChange)="onSearchChange($event)"
+          [dirty]="store.filtersDirty()"
+          (clear)="clearFilters()"
+        >
+          <ng-container filters>
+            <p-select
+              [options]="statusFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="store.status()"
+              (ngModelChange)="store.status.set($event); applyFilters()"
+              appendTo="body"
+              class="list__filter list__filter--narrow"
+            />
+          </ng-container>
+        </app-admin-filter-bar>
+      </header>
+
+      <p class="list__note">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        Sıralama <strong>başlangıç tarihine</strong> göre, yeniden eskiye.
+      </p>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4]; track row) {
+            <p-skeleton height="52px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (item of store.items(); track item.id) {
+            <li>
+              <div class="row" [class.row--selected]="store.selectedId() === item.id">
+                <button type="button" class="row__main" (click)="select(item)">
+                  <i class="row__icon pi pi-calendar" aria-hidden="true"></i>
+
+                  <span class="row__text">
+                    <span class="row__name">{{ item.name }}</span>
+                    <span class="row__sub row__dates">
+                      {{ item.startDate | slice: 0 : 10 }} – {{ item.endDate | slice: 0 : 10 }}
+                    </span>
+                  </span>
+
+                  <span class="row__meta">
+                    @if (item.isCurrent) {
+                      <span
+                        class="row__badge row__badge--current"
+                        pTooltip="Uygulamanın varsayılan dönemi"
+                        tooltipPosition="top"
+                      >
+                        Güncel
+                      </span>
+                    }
+
+                    <span class="row__badge" [class]="'row__badge ' + statusClass(item.status)">
+                      {{ statusLabel(item.status) }}
+                    </span>
+
+                    <code class="row__code">{{ item.code }}</code>
+                  </span>
+                </button>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-calendar state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">
+                {{ store.filtersDirty() ? 'Eşleşen dönem yok' : 'Dönem yok' }}
+              </h3>
+              <p class="state__text">
+                {{
+                  store.filtersDirty()
+                    ? 'Süzgeçleri değiştirin veya temizleyin.'
+                    : 'Ders açılışları ve notlar bir döneme bağlanır; önce bir dönem oluşturun.'
+                }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Künye ── -->
+    <aside class="app-card board__detail" aria-label="Seçili dönem">
+      @if (store.detailLoading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3]; track row) {
+            <p-skeleton height="44px" />
+          }
+        </div>
+      } @else if (detail(); as semester) {
+        <header class="detail__head">
+          <span class="detail__icon"><i class="pi pi-calendar" aria-hidden="true"></i></span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ semester.name }}</h3>
+            <code class="detail__code">{{ semester.code }}</code>
+          </div>
+        </header>
+
+        <p class="lifecycle">
+          <span class="row__badge" [class]="'row__badge ' + statusClass(semester.status)">
+            {{ statusLabel(semester.status) }}
+          </span>
+          @if (semester.isCurrent) {
+            <span class="row__badge row__badge--current">Güncel dönem</span>
+          }
+        </p>
+
+        <p class="detail__note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          {{ statusHint() }}
+        </p>
+
+        <dl class="detail__facts">
+          <div>
+            <dt>Başlangıç</dt>
+            <dd>{{ semester.startDate | slice: 0 : 10 }}</dd>
+          </div>
+          <div>
+            <dt>Bitiş</dt>
+            <dd>{{ semester.endDate | slice: 0 : 10 }}</dd>
+          </div>
+          <div>
+            <dt>Açılan ders</dt>
+            <dd>{{ semester.courseCount }}</dd>
+          </div>
+          <div>
+            <dt>Bağlı kayıt</dt>
+            <dd>{{ semester.linkedRecordCount }}</dd>
+          </div>
+        </dl>
+
+        @if (!semester.isCurrent) {
+          <section class="detail__section">
+            <h4 class="detail__section-title">Güncel dönem</h4>
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'ASSIGN'; operation: 'SEMESTER'"
+              [disabled]="store.saving()"
+              (click)="makeCurrent()"
+            >
+              <i class="pi pi-bookmark" aria-hidden="true"></i> Güncel Dönem Yap
+            </button>
+
+            <p class="detail__note">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              Uygulamanın varsayılan bağlamını değiştirir; mevcut güncel dönem aynı işlemde düşer.
+            </p>
+          </section>
+        }
+
+        <footer class="detail__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasAction="'UPDATE'; operation: 'SEMESTER'"
+            [disabled]="store.saving() || isClosed()"
+            [pTooltip]="isClosed() ? 'Kapalı dönem salt okunurdur.' : ''"
+            [tooltipDisabled]="!isClosed()"
+            tooltipPosition="top"
+            (click)="openEdit()"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i> Düzenle
+          </button>
+
+          <button
+            type="button"
+            class="btn btn--danger"
+            *appHasAction="'DELETE'; operation: 'SEMESTER'"
+            [disabled]="store.saving() || !!deleteBlockedReason()"
+            [pTooltip]="deleteBlockedReason() ?? ''"
+            [tooltipDisabled]="!deleteBlockedReason()"
+            tooltipPosition="top"
+            (click)="confirmDelete()"
+          >
+            <i class="pi pi-trash" aria-hidden="true"></i> Sil
+          </button>
+        </footer>
+
+        @if (deleteBlockedReason(); as reason) {
+          <p class="detail__note detail__note--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i> {{ reason }}
+          </p>
+        }
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Dönem seçilmedi</h3>
+          <p class="state__text">
+            Künyesini görmek, düzenlemek veya güncel dönem yapmak için soldan bir dönem seçin.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<app-semester-form-dialog
+  [(visible)]="formOpen"
+  [semester]="editing() ? detail() : null"
+  [openSemesterName]="openSemesterName()"
+  [saving]="store.saving()"
+  (save)="onFormSave($event)"
+/>
+
+<p-confirmdialog />

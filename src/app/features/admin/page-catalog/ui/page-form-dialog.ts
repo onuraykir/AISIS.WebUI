@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, model, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  model,
+  output,
+  untracked,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { Dialog } from 'primeng/dialog';
@@ -55,36 +65,59 @@ export class PageFormDialog {
 
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(100)]],
-    route: ['', [Validators.required, Validators.maxLength(200), Validators.pattern(ROUTE_PATTERN)]],
+    route: [
+      '',
+      [Validators.required, Validators.maxLength(200), Validators.pattern(ROUTE_PATTERN)],
+    ],
     icon: ['', [Validators.maxLength(50)]],
     description: ['', [Validators.maxLength(500)]],
     moduleId: [null as number | null],
     isActive: [true],
   });
 
+  /**
+   * Formun en son hangi kayıt için kurulduğu. Sıfırlama YALNIZCA diyalog
+   * açıldığında yapılmalı.
+   *
+   * effect'in tek tetikleyicisi `visible()` gibi görünse de kayıt sinyali de
+   * izleniyordu; o tazelendiğinde form kullanıcının girdiklerini silerek
+   * yeniden kuruluyordu. Kayıt artık `untracked` içinde okunuyor ve aynı
+   * açılış için ikinci kez kurulmuyor.
+   */
+  private formKey: string | null = null;
+
   constructor() {
     effect(() => {
       if (!this.visible()) {
+        this.formKey = null;
         return;
       }
 
-      const page = this.page();
+      untracked(() => {
+        const page = this.page();
+        const key = page ? `edit:${page.id}` : 'create';
 
-      this.form.reset({
-        name: page?.name ?? '',
-        route: page?.route ?? '',
-        icon: page?.icon ?? '',
-        description: page?.description ?? '',
-        moduleId: page?.moduleId ?? null,
-        isActive: page?.isActive ?? true,
+        if (this.formKey === key) {
+          return;
+        }
+        this.formKey = key;
+
+        this.form.reset({
+          name: page?.name ?? '',
+          route: page?.route ?? '',
+          icon: page?.icon ?? '',
+          description: page?.description ?? '',
+          moduleId: page?.moduleId ?? null,
+          isActive: page?.isActive ?? true,
+        });
+
+        // Düzenlemede yer değiştirme bu formdan yapılmaz.
+        if (page) {
+          this.form.controls.moduleId.disable();
+        } else {
+          this.form.controls.moduleId.enable();
+        }
       });
-
-      // Düzenlemede yer değiştirme bu formdan yapılmaz.
-      if (page) {
-        this.form.controls.moduleId.disable();
-      } else {
-        this.form.controls.moduleId.enable();
-      }
     });
   }
 

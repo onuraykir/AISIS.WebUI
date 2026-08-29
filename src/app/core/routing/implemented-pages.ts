@@ -11,6 +11,23 @@ import { Type } from '@angular/core';
  * "hazırlanmadı" ekranına düşer.
  */
 export const IMPLEMENTED_PAGES: Record<string, () => Promise<Type<unknown>>> = {
+  '/tanim/bolum': () =>
+    import('@features/admin/departments/department-tree-page').then((m) => m.DepartmentTreePage),
+  '/tanim/ders': () => import('@features/admin/courses/courses-page').then((m) => m.CoursesPage),
+  '/tanim/ders-acilisi': () =>
+    import('@features/admin/offerings/offerings-page').then((m) => m.OfferingsPage),
+  '/tanim/etkinlik': () =>
+    import('@features/admin/activity-definitions/activity-definitions-page').then(
+      (m) => m.ActivityDefinitionsPage,
+    ),
+  '/tanim/donem': () =>
+    import('@features/admin/semesters/semesters-page').then((m) => m.SemestersPage),
+  '/tanim/kisi': () => import('@features/admin/people/people-page').then((m) => m.PeoplePage),
+  '/tanim/ogrenci': () =>
+    import('@features/admin/students/students-page').then((m) => m.StudentsPage),
+  '/tanim/ogretim-elemani': () =>
+    import('@features/admin/instructors/instructors-page').then((m) => m.InstructorsPage),
+  '/tanim/personel': () => import('@features/admin/staff/staff-page').then((m) => m.StaffPage),
   '/sistem/modul-agaci': () =>
     import('@features/admin/module-tree/module-tree-page').then((m) => m.ModuleTreePage),
   '/sistem/sayfa-katalogu': () =>

@@ -1,0 +1,111 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '460px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="enr-dept">
+        Bölüm
+        @if (isEdit()) {
+          <span class="form__hint">değiştirilemez</span>
+        }
+      </label>
+      <p-select
+        inputId="enr-dept"
+        [options]="departmentOptions()"
+        optionLabel="label"
+        optionValue="value"
+        optionDisabled="disabled"
+        formControlName="departmentId"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Akademik birim seçin"
+        appendTo="body"
+        class="form__select"
+      />
+
+      @if (isEdit()) {
+        <p class="form__help">
+          Bölüm değişiyorsa bu kayıt <strong>kapatılır</strong> ve yenisi açılır; künye ikisini de
+          gösterir.
+        </p>
+      }
+
+      @if (form.controls.departmentId.touched && form.controls.departmentId.invalid) {
+        <p class="form__error">Bölüm seçilmelidir.</p>
+      }
+    </div>
+
+    <div class="form__row">
+      <div class="form__field">
+        <label class="form__label" for="enr-kind">Kayıt türü</label>
+        <p-select
+          inputId="enr-kind"
+          [options]="kindOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="enrollmentKind"
+          appendTo="body"
+          class="form__select"
+        />
+      </div>
+
+      <div class="form__field">
+        <label class="form__label" for="enr-level">Seviye</label>
+        <p-select
+          inputId="enr-level"
+          [options]="levelOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="level"
+          appendTo="body"
+          class="form__select"
+        />
+      </div>
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="enr-start">Başlangıç</label>
+      <input id="enr-start" pInputText type="date" formControlName="startDate" />
+      @if (form.controls.startDate.touched && form.controls.startDate.invalid) {
+        <p class="form__error">Başlangıç tarihi zorunludur.</p>
+      }
+    </div>
+
+    @if (primaryConflict()) {
+      <p class="form__warn">
+        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+        Bu öğrencinin <strong>açık bir anadal kaydı var</strong>. İkinci anadal açmak yatay
+        geçiştir: önce mevcut anadal kaydını kapatın. Bu hâliyle kaydetme reddedilecek.
+      </p>
+    } @else {
+      <p class="form__help">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        <strong>Anadal ayrı bir kutu değildir</strong>, kayıt türünden okunur. Açık kayıtlar içinde
+        en fazla bir anadal olabilir; ÇAP ve yandal başka bölümlerde açılır.
+      </p>
+    }
+
+    <p class="form__help">
+      Aynı bölümde aynı anda iki açık kayıt olamaz; kapanmış kayıtların tarihleri de çakışamaz.
+    </p>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Ekle' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

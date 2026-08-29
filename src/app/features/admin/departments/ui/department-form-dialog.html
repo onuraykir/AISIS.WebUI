@@ -1,0 +1,129 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '480px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="dept-code">
+        Kod
+        @if (isEdit()) {
+          <span class="form__hint">değiştirilemez</span>
+        }
+      </label>
+      <input
+        id="dept-code"
+        pInputText
+        formControlName="code"
+        placeholder="BLM"
+        autocomplete="off"
+        spellcheck="false"
+        (input)="onCodeInput($event)"
+      />
+      <p class="form__help">Ortamlar arası sabit tutamaç. Yalnızca A–Z, 0–9 ve alt çizgi.</p>
+
+      @if (form.controls.code.touched && form.controls.code.invalid) {
+        <p class="form__error">Kod zorunludur ve yalnızca A–Z, 0–9, alt çizgi içerebilir.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="dept-name">Ad</label>
+      <input
+        id="dept-name"
+        pInputText
+        formControlName="name"
+        placeholder="Bilgisayar Mühendisliği"
+      />
+
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <p class="form__error">Ad zorunludur.</p>
+      }
+    </div>
+
+    <div class="form__row">
+      <div class="form__field">
+        <label class="form__label" for="dept-type">Tip</label>
+        <p-select
+          inputId="dept-type"
+          [options]="typeOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="type"
+          appendTo="body"
+          class="form__select"
+        />
+      </div>
+
+      <div class="form__field">
+        <label class="form__label" for="dept-level">Seviye</label>
+        <p-select
+          inputId="dept-level"
+          [options]="levelOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="level"
+          appendTo="body"
+          class="form__select"
+        />
+      </div>
+    </div>
+
+    <p class="form__help">
+      Öğrenci yalnızca <strong>akademik</strong> birime kaydedilebilir; bu kural veritabanında
+      zorunlu tutuluyor. Öğrencisi olan bir birim idariye çevrilemez.
+    </p>
+
+    @if (!isEdit()) {
+      <div class="form__field">
+        <label class="form__label" for="dept-parent">
+          Üst birim
+          <span class="form__hint">boş bırakılırsa kök</span>
+        </label>
+        <p-select
+          inputId="dept-parent"
+          [options]="parentOptions()"
+          optionLabel="label"
+          optionValue="id"
+          formControlName="parentDepartmentId"
+          class="form__select"
+          [filter]="true"
+          filterBy="label"
+          placeholder="Kök birim"
+          [showClear]="true"
+          appendTo="body"
+        />
+        <p class="form__help">Mevcut bir birimin üstü değiştirilecekse taşıma işlemi kullanılır.</p>
+      </div>
+    }
+
+    @if (isEdit()) {
+      <div class="form__switch">
+        <p-toggleswitch formControlName="isActive" inputId="dept-active" />
+        <label for="dept-active">
+          <span class="form__switch-title">Aktif</span>
+          <span class="form__switch-help">
+            Pasif birime yeni kayıt eklenemez; mevcut bağlar kapanmaz.
+          </span>
+        </label>
+      </div>
+    }
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Oluştur' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

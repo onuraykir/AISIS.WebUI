@@ -1,6 +1,6 @@
 /** `api/OperationAdmin` sözleşmesi — backend DTO'ları ile birebir. */
 
-/** Ortak eylem havuzundaki bir tanım (VIEW, CREATE, …). */
+/** Ortak eylem havuzundaki bir tanım (CREATE, UPDATE, …). Havuzda VIEW yoktur. */
 export interface ActionDefinition {
   readonly id: number;
   readonly code: string;
@@ -20,7 +20,7 @@ export interface OperationAction {
   readonly actionCode: string;
   readonly actionName: string;
 
-  /** Boş olabilir: her eylemin arkasında bir uç nokta yoktur (ör. VIEW). */
+  /** Boş olabilir: ucu henüz yazılmamış eylemler burada boş durur. */
   readonly endpoint: string | null;
   readonly httpMethod: string | null;
 

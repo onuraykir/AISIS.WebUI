@@ -1,0 +1,535 @@
+<app-admin-toolbar
+  title="Ders Açılışı"
+  description="Bir dönemde hangi derslerin açıldığı, kimin verdiği ve kimin aldığı. Hoca ve öğrenci bağları derse değil AÇILIŞA aittir — her dönem yeniden kurulur."
+>
+  <ng-container actions>
+    <p-select
+      [options]="store.semesterOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="store.semesterId()"
+      (ngModelChange)="onSemesterChange($event)"
+      placeholder="Dönem seçin"
+      appendTo="body"
+      class="toolbar__semester"
+    />
+
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'OFFERING'"
+      [disabled]="!store.semesterWritable()"
+      [pTooltip]="store.semesterLockReason() ?? ''"
+      [tooltipDisabled]="store.semesterWritable()"
+      tooltipPosition="bottom"
+      (click)="openCoursePicker()"
+    >
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Ders Aç
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.total() }}</span>
+      <span class="stats__label">açılan ders</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.totalStudents() }}</span>
+      <span class="stats__label">öğrenci kaydı</span>
+    </div>
+    @if (store.withoutInstructorCount() > 0) {
+      <div class="stats__item stats__item--attention">
+        <span class="stats__value">{{ store.withoutInstructorCount() }}</span>
+        <span class="stats__label">hocasız</span>
+      </div>
+    }
+  </div>
+</app-admin-toolbar>
+
+@if (store.semesterLockReason(); as reason) {
+  <p-message severity="warn" styleClass="admin-banner">{{ reason }}</p-message>
+}
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Ders açılışları yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board">
+    <!-- ── Liste ── -->
+    <section class="app-card board__main" aria-label="Açılan dersler">
+      <header class="list__head">
+        <h3 class="pane__title">
+          <i class="pi pi-calendar-plus" aria-hidden="true"></i>
+          {{ store.semester()?.name ?? 'Dönem seçilmedi' }}
+        </h3>
+
+        <app-admin-filter-bar
+          placeholder="Ders kodu veya adı…"
+          [search]="store.search()"
+          (searchChange)="onSearchChange($event)"
+          [dirty]="store.search().length > 0"
+          (clear)="clearFilters()"
+        />
+      </header>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4, 5]; track row) {
+            <p-skeleton height="52px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (item of store.items(); track item.id) {
+            <li>
+              <div class="row" [class.row--selected]="store.selectedId() === item.id">
+                <button type="button" class="row__main" (click)="select(item)">
+                  <i class="row__icon pi pi-book" aria-hidden="true"></i>
+
+                  <span class="row__text">
+                    <span class="row__name">{{ item.courseCode }} — {{ item.courseName }}</span>
+                    <span class="row__sub">
+                      {{ item.departmentNames.join(' · ') || 'Müfredatsız' }}
+                    </span>
+                  </span>
+
+                  <span class="row__meta">
+                    @if (item.instructorCount === 0) {
+                      <span
+                        class="row__badge row__badge--warn"
+                        pTooltip="Bu açılışa henüz hoca atanmadı"
+                        tooltipPosition="top"
+                      >
+                        Hocasız
+                      </span>
+                    } @else {
+                      <span class="row__badge row__badge--muted">
+                        <i class="pi pi-user" aria-hidden="true"></i> {{ item.instructorCount }}
+                      </span>
+                    }
+
+                    <span
+                      class="row__badge row__badge--students"
+                      pTooltip="Kayıtlı öğrenci"
+                      tooltipPosition="top"
+                    >
+                      <i class="pi pi-users" aria-hidden="true"></i> {{ item.studentCount }}
+                    </span>
+
+                    @if (item.activityCount > 0) {
+                      <span
+                        class="row__badge row__badge--muted"
+                        pTooltip="Değerlendirme etkinliği"
+                        tooltipPosition="top"
+                      >
+                        <i class="pi pi-list-check" aria-hidden="true"></i>
+                        {{ item.activityCount }}
+                      </span>
+                    }
+                  </span>
+                </button>
+
+                <div class="row__actions">
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    pTooltip="Açılışı kaldır"
+                    tooltipPosition="top"
+                    aria-label="Açılışı kaldır"
+                    *appHasAction="'DELETE'; operation: 'OFFERING'"
+                    [disabled]="store.saving() || !store.semesterWritable()"
+                    (click)="confirmRemoveOffering(item)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-calendar-plus state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">
+                {{ store.search() ? 'Eşleşen ders yok' : 'Bu dönemde ders açılmamış' }}
+              </h3>
+              <p class="state__text">
+                {{
+                  store.search()
+                    ? 'Aramayı değiştirin.'
+                    : 'Ders Aç düğmesiyle tanımlı derslerden seçim yapın.'
+                }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Künye ── -->
+    <aside class="app-card board__detail" aria-label="Seçili açılış">
+      @if (store.detailLoading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3]; track row) {
+            <p-skeleton height="44px" />
+          }
+        </div>
+      } @else if (detail(); as offering) {
+        <header class="detail__head">
+          <span class="detail__icon"><i class="pi pi-book" aria-hidden="true"></i></span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ offering.courseName }}</h3>
+            <code class="detail__code">{{ offering.courseCode }}</code>
+          </div>
+        </header>
+
+        <dl class="detail__facts">
+          <div>
+            <dt>Dönem</dt>
+            <dd>{{ offering.semesterName }}</dd>
+          </div>
+          <div>
+            <dt>AKTS</dt>
+            <dd>{{ offering.akts }}</dd>
+          </div>
+          <div>
+            <dt>Hoca</dt>
+            <dd>{{ offering.instructors.length }}</dd>
+          </div>
+          <div>
+            <dt>Öğrenci</dt>
+            <dd>{{ offering.students.length }}</dd>
+          </div>
+          <div>
+            <dt>Etkinlik</dt>
+            <dd>{{ offering.activities.length }}</dd>
+          </div>
+        </dl>
+
+        <p class="detail__note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Müfredat: <strong>{{ offering.departmentNames.join(' · ') || 'hiçbir bölümde' }}</strong
+          >. Aday öğrenciler bu bölümlerden gelir — ÇAP ve yandal dahil.
+        </p>
+
+        <!-- ── Hocalar ── -->
+        <section class="detail__section">
+          <div class="detail__section-head">
+            <h4 class="detail__section-title">Dersi verenler</h4>
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'CREATE'; operation: 'OFFERING_INSTRUCTOR'"
+              [disabled]="store.saving() || !store.semesterWritable()"
+              (click)="openInstructorPicker()"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i> Hoca
+            </button>
+          </div>
+
+          <ul class="assignments">
+            @for (assignment of offering.instructors; track assignment.id) {
+              <li class="assignment">
+                <div class="assignment__text">
+                  <span class="assignment__dept">
+                    {{ assignment.academicTitle }} {{ assignment.fullName }}
+                  </span>
+                  <span class="assignment__sub">{{ assignment.registryNumber }}</span>
+                </div>
+
+                <div class="assignment__actions">
+                  @if (canEditRole()) {
+                    <p-select
+                      [options]="roleOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      [ngModel]="assignment.role"
+                      (ngModelChange)="onRoleChange(assignment, $event)"
+                      [disabled]="store.saving() || !store.semesterWritable()"
+                      appendTo="body"
+                      class="assignment__role"
+                    />
+                  } @else {
+                    <span class="assignment__badge assignment__badge--elective">
+                      {{ roleLabel(assignment.role) }}
+                    </span>
+                  }
+
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    pTooltip="Dersten çıkar"
+                    tooltipPosition="top"
+                    aria-label="Dersten çıkar"
+                    *appHasAction="'DELETE'; operation: 'OFFERING_INSTRUCTOR'"
+                    [disabled]="store.saving() || !store.semesterWritable()"
+                    (click)="removeInstructor(assignment)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </li>
+            } @empty {
+              <li class="assignments__empty">Henüz hoca atanmadı.</li>
+            }
+          </ul>
+
+          <p class="detail__note">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Birden fazla <strong>sorumlu</strong> olabilir — ortak yürütülen derslerde sorumluluk
+            paylaşılır.
+          </p>
+        </section>
+
+        <!-- ── Sınıf listesi ── -->
+        <section class="detail__section">
+          <div class="detail__section-head">
+            <h4 class="detail__section-title">Sınıf listesi</h4>
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'CREATE'; operation: 'OFFERING_STUDENT'"
+              [disabled]="store.saving() || !store.semesterWritable()"
+              (click)="openStudentPicker()"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i> Öğrenci
+            </button>
+          </div>
+
+          <ul class="assignments">
+            @for (student of offering.students; track student.id) {
+              <li class="assignment">
+                <div class="assignment__text">
+                  <span class="assignment__dept">{{ student.fullName }}</span>
+                  <span class="assignment__sub">
+                    {{ student.studentNumber }}
+                    @if (student.primaryDepartmentName) {
+                      · {{ student.primaryDepartmentName }}
+                    }
+                  </span>
+                </div>
+
+                <div class="assignment__actions">
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    pTooltip="Dersten çıkar"
+                    tooltipPosition="top"
+                    aria-label="Dersten çıkar"
+                    *appHasAction="'DELETE'; operation: 'OFFERING_STUDENT'"
+                    [disabled]="store.saving() || !store.semesterWritable()"
+                    (click)="removeStudent(student)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </li>
+            } @empty {
+              <li class="assignments__empty">Sınıf listesi boş.</li>
+            }
+          </ul>
+        </section>
+
+        <!-- ── Değerlendirme yapısı ── -->
+        <section class="detail__section">
+          <div class="detail__section-head">
+            <h4 class="detail__section-title">Değerlendirme yapısı</h4>
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'CREATE'; operation: 'OFFERING_ACTIVITY'"
+              [disabled]="store.saving() || !store.activityWritable()"
+              [pTooltip]="store.activityLockReason() ?? 'Vize, final, ödev ekle'"
+              tooltipPosition="top"
+              (click)="openActivityCreate()"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i> Etkinlik
+            </button>
+          </div>
+
+          <ul class="assignments">
+            @for (activity of offering.activities; track activity.id) {
+              <li class="assignment">
+                <div class="assignment__text">
+                  <span class="assignment__dept">{{ activity.name }}</span>
+                  <span class="assignment__sub">
+                    {{ activity.activityDefinitionName }} · {{ activity.maxPoint }} puan
+                    @if (activity.itemCount > 0) {
+                      · {{ activity.itemCount }} soru
+                    }
+                    @if (activity.scoreCount > 0) {
+                      · {{ activity.scoreCount }} girilmiş not
+                    }
+                  </span>
+                </div>
+
+                <div class="assignment__actions">
+                  <button
+                    type="button"
+                    class="row__action"
+                    pTooltip="Düzenle"
+                    tooltipPosition="top"
+                    aria-label="Düzenle"
+                    *appHasAction="'UPDATE'; operation: 'OFFERING_ACTIVITY'"
+                    [disabled]="store.saving() || !store.activityWritable()"
+                    (click)="openActivityEdit(activity)"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    aria-label="Kaldır"
+                    *appHasAction="'DELETE'; operation: 'OFFERING_ACTIVITY'"
+                    [disabled]="store.saving() || !!activityDeleteBlockedReason(activity)"
+                    [pTooltip]="activityDeleteBlockedReason(activity) ?? 'Kaldır'"
+                    tooltipPosition="top"
+                    (click)="confirmRemoveActivity(activity)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </li>
+            } @empty {
+              <li class="assignments__empty">Henüz etkinlik eklenmedi.</li>
+            }
+          </ul>
+
+          <p class="detail__note">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Not dosyası bu iskeleti <strong>doldurur, kurmaz</strong>: dosyadaki bir sütun burada
+            tanımlı değilse yükleme durur. Türler <strong>Etkinlik Tanımları</strong> ekranındaki
+            ortak sözlükten gelir.
+          </p>
+        </section>
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Açılış seçilmedi</h3>
+          <p class="state__text">
+            Hocalarını ve sınıf listesini görmek için soldan bir ders seçin.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<!-- ── Ders seçimi ── -->
+<app-picker-dialog
+  [(visible)]="coursePickerOpen"
+  heading="Dönemde Ders Aç"
+  [description]="'Seçilen dersler ' + (store.semester()?.name ?? '') + ' döneminde açılır.'"
+  [items]="courseItems()"
+  [loading]="store.pickerLoading()"
+  [search]="courseSearch()"
+  (searchChange)="onCourseSearchChange($event)"
+  searchPlaceholder="Ders kodu veya adı…"
+  confirmLabel="Aç"
+  emptyText="Bu dönemde açılabilecek ders kalmadı."
+  [saving]="store.saving()"
+  (confirm)="onCoursesPicked($event)"
+>
+  <ng-container filters>
+    <p-select
+      [options]="departmentFilterOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="courseDepartmentId()"
+      (ngModelChange)="onCourseDepartmentChange($event)"
+      [filter]="true"
+      filterBy="label"
+      placeholder="Tüm bölümler"
+      appendTo="body"
+      class="picker__filter"
+    />
+  </ng-container>
+</app-picker-dialog>
+
+<!-- ── Hoca seçimi ── -->
+<app-picker-dialog
+  [(visible)]="instructorPickerOpen"
+  heading="Derse Hoca Ata"
+  description="Ders tanımındaki yeterlilik listesindekiler başta gelir; liste kısıtlayıcı değil, sıralayıcıdır."
+  [items]="instructorItems()"
+  [loading]="store.pickerLoading()"
+  [(search)]="instructorSearch"
+  searchPlaceholder="Ad veya sicil…"
+  confirmLabel="Ata"
+  emptyText="Atanabilecek öğretim elemanı yok."
+  [saving]="store.saving()"
+  (confirm)="onInstructorsPicked($event)"
+>
+  <ng-container filters>
+    <p-select
+      [options]="roleOptions"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="assignRole()"
+      (ngModelChange)="assignRole.set($event)"
+      appendTo="body"
+      class="picker__filter"
+    />
+  </ng-container>
+</app-picker-dialog>
+
+<!-- ── Öğrenci seçimi ── -->
+<app-picker-dialog
+  [(visible)]="studentPickerOpen"
+  heading="Sınıf Listesine Ekle"
+  description="Adaylar dersin müfredatta bulunduğu bölümlerdeki açık öğrenci kayıtlarından gelir. ÇAP ve yandal öğrencileri de listede — rozet hangi bağdan geldiklerini gösterir."
+  [items]="studentItems()"
+  [loading]="store.pickerLoading()"
+  [search]="studentSearch()"
+  (searchChange)="onStudentSearchChange($event)"
+  searchPlaceholder="Numara veya ad…"
+  confirmLabel="Ekle"
+  emptyText="Aday öğrenci yok."
+  [saving]="store.saving()"
+  (confirm)="onStudentsPicked($event)"
+>
+  <ng-container filters>
+    <p-select
+      [options]="offeringDepartmentOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="studentDepartmentId()"
+      (ngModelChange)="onStudentDepartmentChange($event)"
+      placeholder="Tüm bölümler"
+      appendTo="body"
+      class="picker__filter"
+    />
+  </ng-container>
+</app-picker-dialog>
+
+<!-- ── Etkinlik ── -->
+<app-offering-activity-dialog
+  [(visible)]="activityDialogOpen"
+  [activity]="activityInDialog()"
+  [definitions]="store.activityDefinitions()"
+  [usedNames]="usedActivityNames()"
+  [saving]="store.saving()"
+  (save)="onActivitySave($event)"
+/>
+
+<p-confirmdialog />

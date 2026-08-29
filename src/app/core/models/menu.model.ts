@@ -6,9 +6,14 @@
  * (bkz. core/utils/menu.mapper.ts) — API sözleşmesi ile görünüm modeli bilerek ayrı.
  */
 
-/** Ortak eylem sözlüğündeki kodlar (ActionDefinition.Code). */
+/**
+ * Ortak eylem sözlüğündeki kodlar (ActionDefinition.Code).
+ *
+ * `VIEW` YOKTUR ve olmayacak: görünürlük bir eylem değil kapsam sorusudur.
+ * Sayfa, kullanıcının grubunun modül kapsamındaysa menüde çıkar; bu liste
+ * yalnızca YAZMA eylemlerini taşır.
+ */
 export type ActionCode =
-  | 'VIEW'
   | 'CREATE'
   | 'UPDATE'
   | 'DELETE'
@@ -18,7 +23,14 @@ export type ActionCode =
   | 'REJECT'
   | 'PRINT'
   /** Yerleştirme / atama: sayfayı modüle koymak, role yetki vermek, gruba kapsam bağlamak. */
-  | 'ASSIGN';
+  | 'ASSIGN'
+  | 'GRADUATE'
+  | 'WITHDRAW'
+  | 'DISMISS'
+  | 'TRANSFER'
+  /** Kaydı sonlandırmadan askıya alır / geri açar. */
+  | 'SUSPEND'
+  | 'RESUME';
 
 /**
  * Sayfadaki bir iş fonksiyonu ve kullanıcının o fonksiyondaki eylemleri.
@@ -51,7 +63,9 @@ export interface MenuPage {
   /**
    * Bu sayfadaki iş fonksiyonları ve her birinde izinli eylemler.
    *
-   * Sayfa menüde görünüyorsa en az bir işleminde VIEW vardır.
+   * BOŞ OLABİLİR — ve bu normaldir: sayfayı görmek kapsamdan gelir, eylemler
+   * rolden. Hiçbir yazma yetkisi olmayan kullanıcı sayfayı salt okunur görür.
+   * Boş liste "sayfa yok" demek değildir.
    *
    * DİKKAT: Bu bir güvenlik önlemi değildir — sunucu tarafı da denetler.
    */

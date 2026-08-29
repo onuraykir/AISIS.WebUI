@@ -1,0 +1,63 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '420px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="ad-code">
+        Kod
+        @if (isEdit()) {
+          <span class="form__hint">değiştirilemez</span>
+        }
+      </label>
+      <input
+        id="ad-code"
+        pInputText
+        formControlName="code"
+        placeholder="MIDTERM"
+        autocomplete="off"
+        spellcheck="false"
+        (input)="onCodeInput($event)"
+      />
+      <p class="form__help">Ortamlar arası sabit tutamaç. Yalnızca A–Z, 0–9 ve alt çizgi.</p>
+
+      @if (form.controls.code.touched && form.controls.code.invalid) {
+        <p class="form__error">Kod zorunludur ve yalnızca A–Z, 0–9, alt çizgi içerebilir.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="ad-name">Ad</label>
+      <input id="ad-name" pInputText formControlName="name" placeholder="Vize" />
+      <p class="form__help">Ekranlarda görünen ad. Sonradan değiştirilebilir.</p>
+
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <p class="form__error">Ad zorunludur.</p>
+      }
+    </div>
+
+    <p class="form__help">
+      <i class="pi pi-info-circle" aria-hidden="true"></i>
+      Bu yalnızca <strong>sözlük</strong>: puan, ağırlık ve sorular ders açılışında belirlenir. Aynı
+      tanım her dönem yeniden kullanılır.
+    </p>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Oluştur' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

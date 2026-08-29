@@ -1,0 +1,102 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  header="Kişi Kartını Düzelt"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '520px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <p class="form__lead">
+      Bu bilgiler kişinin <strong>tüm rol kayıtlarında</strong> geçerlidir — öğrencilik, akademik ve
+      idari kayıtların hepsi aynı kişi kartına bakar.
+    </p>
+
+    <div class="form__field">
+      <label class="form__label" for="prs-tckn">TC Kimlik No</label>
+      <input
+        id="prs-tckn"
+        pInputText
+        formControlName="nationalId"
+        inputmode="numeric"
+        maxlength="11"
+        autocomplete="off"
+      />
+      <p class="form__help">
+        Girişte yanlış yazılmış bir numaranın düzeltilecek başka yeri yok; bu yüzden burada
+        değiştirilebilir. Kontrol basamağı ve tekillik sunucuda denetlenir.
+      </p>
+
+      @if (form.controls.nationalId.touched && form.controls.nationalId.invalid) {
+        <p class="form__error">TC Kimlik No 11 haneli olmalıdır.</p>
+      }
+    </div>
+
+    <div class="form__row">
+      <div class="form__field">
+        <label class="form__label" for="prs-name">Ad</label>
+        <input id="prs-name" pInputText formControlName="name" />
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+          <p class="form__error">Ad zorunludur.</p>
+        }
+      </div>
+
+      <div class="form__field">
+        <label class="form__label" for="prs-surname">Soyad</label>
+        <input id="prs-surname" pInputText formControlName="surname" />
+        @if (form.controls.surname.touched && form.controls.surname.invalid) {
+          <p class="form__error">Soyad zorunludur.</p>
+        }
+      </div>
+    </div>
+
+    <div class="form__row">
+      <div class="form__field">
+        <label class="form__label" for="prs-birth">Doğum tarihi</label>
+        <input id="prs-birth" pInputText type="date" formControlName="birthDate" />
+      </div>
+
+      <div class="form__field">
+        <label class="form__label" for="prs-gender">Cinsiyet</label>
+        <p-select
+          inputId="prs-gender"
+          [options]="genderOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="gender"
+          appendTo="body"
+          class="form__select"
+        />
+      </div>
+    </div>
+
+    <div class="form__row">
+      <div class="form__field">
+        <label class="form__label" for="prs-email">E-posta</label>
+        <input id="prs-email" pInputText type="email" formControlName="email" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <p class="form__error">Geçerli bir e-posta girin.</p>
+        }
+      </div>
+
+      <div class="form__field">
+        <label class="form__label" for="prs-phone">Telefon</label>
+        <input id="prs-phone" pInputText formControlName="phone" inputmode="tel" />
+      </div>
+    </div>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        Kaydet
+      </button>
+    </footer>
+  </form>
+</p-dialog>

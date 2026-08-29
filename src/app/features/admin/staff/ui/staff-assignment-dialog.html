@@ -1,0 +1,96 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '460px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="assign-dept">
+        Birim
+        @if (isEdit()) {
+          <span class="form__hint">değiştirilemez</span>
+        }
+      </label>
+      <p-select
+        inputId="assign-dept"
+        [options]="departmentOptions()"
+        optionLabel="label"
+        optionValue="value"
+        optionDisabled="disabled"
+        formControlName="departmentId"
+        [filter]="true"
+        filterBy="label"
+        placeholder="İdari birim seçin"
+        appendTo="body"
+        class="form__select"
+      />
+
+      @if (isEdit()) {
+        <p class="form__help">
+          Birim değişiyorsa bu görev <strong>kapatılır</strong> ve yenisi açılır; künye ikisini de
+          gösterir.
+        </p>
+      }
+
+      @if (form.controls.departmentId.touched && form.controls.departmentId.invalid) {
+        <p class="form__error">Birim seçilmelidir.</p>
+      }
+    </div>
+
+    <div class="form__row">
+      <div class="form__field">
+        <label class="form__label" for="assign-duty">Görev</label>
+        <p-select
+          inputId="assign-duty"
+          [options]="dutyOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="duty"
+          appendTo="body"
+          class="form__select"
+        />
+      </div>
+
+      <div class="form__field">
+        <label class="form__label" for="assign-start">Başlangıç</label>
+        <input id="assign-start" pInputText type="date" formControlName="startDate" />
+        @if (form.controls.startDate.touched && form.controls.startDate.invalid) {
+          <p class="form__error">Başlangıç tarihi zorunludur.</p>
+        }
+      </div>
+    </div>
+
+    <p class="form__help">
+      Aynı birimde aynı anda iki açık görev olamaz; kapanmış görevlerin tarihleri de çakışamaz.
+    </p>
+
+    <div class="form__switch">
+      <p-toggleswitch formControlName="isPrimary" inputId="assign-primary" />
+      <label for="assign-primary">
+        <span class="form__switch-title">Ana birim (kadro)</span>
+        <span class="form__switch-help">
+          Açık görevler içinde yalnızca biri ana birim olabilir. Bunu işaretlerseniz mevcut ana
+          birim aynı işlemde düşürülür — kişi iki birimde de çalışmaya devam eder, yalnızca kadrosu
+          taşınır.
+        </span>
+      </label>
+    </div>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Ekle' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

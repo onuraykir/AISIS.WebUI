@@ -1,0 +1,48 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '420px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    @if (description()) {
+      <p class="form__lead">{{ description() }}</p>
+    }
+
+    <div class="form__field">
+      <label class="form__label" for="std-end-date">Tarih</label>
+      <input id="std-end-date" pInputText type="date" formControlName="endDate" />
+      @if (form.controls.endDate.touched && form.controls.endDate.invalid) {
+        <p class="form__error">Tarih zorunludur.</p>
+      }
+    </div>
+
+    <p class="form__help">
+      <i class="pi pi-info-circle" aria-hidden="true"></i>
+      Kayıt <strong>silinmez</strong>; geçmişiyle birlikte listede kalır. Kalan açık bölüm kayıtları
+      da aynı sebeple kapatılır.
+    </p>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button
+        type="submit"
+        class="btn"
+        [class.btn--danger]="danger()"
+        [class.btn--primary]="!danger()"
+        [disabled]="saving()"
+      >
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ confirmLabel() }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

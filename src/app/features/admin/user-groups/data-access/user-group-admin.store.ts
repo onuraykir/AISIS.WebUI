@@ -135,13 +135,13 @@ export class UserGroupAdminStore {
     }
   }
 
-async selectGroup(groupId: number): Promise<void> {
+  async selectGroup(groupId: number): Promise<void> {
     this._selectedGroupId.set(groupId);
     await this.loadDetail(groupId);
   }
 
   private async loadDetail(groupId: number): Promise<void> {
-this._detailLoading.set(true);
+    this._detailLoading.set(true);
 
     try {
       const [detail, members] = await Promise.all([
@@ -184,9 +184,7 @@ this._detailLoading.set(true);
 
     return this.runCommand(() => {
       if (kind === 'modules') {
-        return firstValueFrom(
-          this.api.setModules(groupId, { rootModuleIds: this._moduleDraft() }),
-        );
+        return firstValueFrom(this.api.setModules(groupId, { rootModuleIds: this._moduleDraft() }));
       }
 
       if (kind === 'departments') {
@@ -257,7 +255,7 @@ this._detailLoading.set(true);
   }
 
   private async runCommand(action: () => Promise<string>): Promise<boolean> {
-this._saving.set(true);
+    this._saving.set(true);
     this._feedback.set(null);
 
     try {

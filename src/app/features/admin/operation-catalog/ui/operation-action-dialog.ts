@@ -1,15 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, model, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  model,
+  output,
+  untracked,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { Dialog } from 'primeng/dialog';
 import { Select } from 'primeng/select';
 import { ToggleSwitch } from 'primeng/toggleswitch';
 
-import {
-  ActionDefinition,
-  ApiEndpoint,
-  OperationAction,
-} from '../data-access/operation.models';
+import { ActionDefinition, ApiEndpoint, OperationAction } from '../data-access/operation.models';
 
 export interface OperationActionFormValue {
   readonly actionDefinitionId: number;
@@ -40,8 +46,8 @@ function endpointKey(method: string, route: string): string {
  * bir rota sessizce hiçbir isteği eşleştirmez, bu da yetkiyi görünmez biçimde
  * boşa düşürürdü.
  *
- * Uç nokta boş bırakılabilir: VIEW gibi salt görünürlük yetkilerinin arkasında
- * bir çağrı yoktur; bunlar sunucudaki adres eşleştirmesine girmez.
+ * Uç nokta boş bırakılabilir: ucu henüz yazılmamış bir eylem yetkilendirilebilir
+ * ama sunucudaki adres eşleştirmesine girmez; ekranda UNAVAILABLE görünür.
  */
 @Component({
   selector: 'app-operation-action-dialog',
@@ -129,28 +135,47 @@ export class OperationActionDialog {
     isActive: [true],
   });
 
+  /**
+   * Formun en son hangi bağ için kurulduğu. Sıfırlama YALNIZCA diyalog
+   * açıldığında yapılmalı; girdi sinyalleri tazelendiğinde kullanıcının
+   * seçtikleri silinmemeli.
+   *
+   * Yeni bağda anahtara ÖN SEÇİM de giriyor: aynı diyalog havuzdaki farklı bir
+   * çipten açıldığında form yeniden kurulmalı.
+   */
+  private formKey: string | null = null;
+
   constructor() {
     effect(() => {
       if (!this.visible()) {
+        this.formKey = null;
         return;
       }
 
-      const action = this.action();
+      untracked(() => {
+        const action = this.action();
+        const key = action ? `edit:${action.id}` : `create:${this.preselectDefinitionId() ?? '-'}`;
 
-      this.form.reset({
-        actionDefinitionId: action?.actionDefinitionId ?? this.preselectDefinitionId(),
-        endpointKey:
-          action?.endpoint && action.httpMethod
-            ? endpointKey(action.httpMethod, action.endpoint)
-            : null,
-        isActive: action?.isActive ?? true,
+        if (this.formKey === key) {
+          return;
+        }
+        this.formKey = key;
+
+        this.form.reset({
+          actionDefinitionId: action?.actionDefinitionId ?? this.preselectDefinitionId(),
+          endpointKey:
+            action?.endpoint && action.httpMethod
+              ? endpointKey(action.httpMethod, action.endpoint)
+              : null,
+          isActive: action?.isActive ?? true,
+        });
+
+        if (action) {
+          this.form.controls.actionDefinitionId.disable();
+        } else {
+          this.form.controls.actionDefinitionId.enable();
+        }
       });
-
-      if (action) {
-        this.form.controls.actionDefinitionId.disable();
-      } else {
-        this.form.controls.actionDefinitionId.enable();
-      }
     });
   }
 

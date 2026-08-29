@@ -1,0 +1,89 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '460px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="cd-dept">
+        Bölüm
+        @if (isEdit()) {
+          <span class="form__hint">değiştirilemez</span>
+        }
+      </label>
+      <p-select
+        inputId="cd-dept"
+        [options]="departmentOptions()"
+        optionLabel="label"
+        optionValue="value"
+        optionDisabled="disabled"
+        formControlName="departmentId"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Akademik birim seçin"
+        appendTo="body"
+        class="form__select"
+      />
+      <p class="form__help">Yalnızca akademik birimler listelenir.</p>
+
+      @if (form.controls.departmentId.touched && form.controls.departmentId.invalid) {
+        <p class="form__error">Bölüm seçilmelidir.</p>
+      }
+    </div>
+
+    <div class="form__switch">
+      <p-toggleswitch formControlName="isRequired" inputId="cd-required" />
+      <label for="cd-required">
+        <span class="form__switch-title">Zorunlu ders</span>
+        <span class="form__switch-help">
+          Kapalıysa seçmeli. Bu ayar <strong>yalnızca bu bölüm için</strong> geçerli — aynı ders
+          başka bölümde farklı olabilir.
+        </span>
+      </label>
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="cd-term">
+        Önerilen yarıyıl
+        <span class="form__hint">boş bırakılabilir</span>
+      </label>
+      <input
+        id="cd-term"
+        pInputText
+        type="number"
+        formControlName="recommendedTerm"
+        min="1"
+        max="16"
+        placeholder="3"
+      />
+      <p class="form__help">Müfredattaki yerleşimi anlatır; kısıt değildir.</p>
+
+      @if (form.controls.recommendedTerm.touched && form.controls.recommendedTerm.invalid) {
+        <p class="form__error">Yarıyıl 1 ile 16 arasında olmalıdır.</p>
+      }
+    </div>
+
+    <p class="form__help">
+      <i class="pi pi-info-circle" aria-hidden="true"></i>
+      Müfredat bağı aynı zamanda <strong>aday öğrenci havuzunu</strong> belirler: ders açıldığında
+      bu bölümlerde açık kaydı olan öğrenciler aday olur — ÇAP ve yandal dahil.
+    </p>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Ekle' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

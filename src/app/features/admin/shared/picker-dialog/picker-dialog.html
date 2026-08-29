@@ -1,0 +1,121 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '620px' }"
+>
+  <div class="picker">
+    @if (description()) {
+      <p class="picker__lead">{{ description() }}</p>
+    }
+
+    <div class="picker__filters">
+      <p-iconfield class="picker__search">
+        <p-inputicon class="pi pi-search" />
+        <input
+          pInputText
+          type="search"
+          [placeholder]="searchPlaceholder()"
+          [attr.aria-label]="searchPlaceholder()"
+          [value]="search()"
+          (input)="onSearchInput($event)"
+        />
+      </p-iconfield>
+
+      <ng-content select="[filters]" />
+    </div>
+
+    <div class="picker__bar">
+      @if (selectableCount() > 0) {
+        <button type="button" class="linkbtn" (click)="toggleAll()">
+          {{ allSelected() ? 'Seçimi bırak' : 'Görünenlerin hepsini seç' }}
+        </button>
+      }
+
+      <span class="picker__count">
+        @if (selectedCount() > 0) {
+          {{ selectedCount() }} seçili
+        } @else {
+          {{ items().length }} kayıt
+        }
+      </span>
+    </div>
+
+    @if (loading()) {
+      <div class="picker__list">
+        @for (row of [1, 2, 3, 4]; track row) {
+          <p-skeleton height="46px" />
+        }
+      </div>
+    } @else {
+      <ul class="picker__list">
+        @for (item of items(); track item.id) {
+          <li>
+            <button
+              type="button"
+              class="picker__row"
+              [class.picker__row--selected]="isSelected(item.id)"
+              [class.picker__row--disabled]="item.disabled"
+              [attr.aria-pressed]="isSelected(item.id)"
+              [attr.title]="item.disabled ? item.disabledReason : null"
+              [disabled]="item.disabled"
+              (click)="toggle(item)"
+            >
+              <span class="picker__check" aria-hidden="true">
+                @if (isSelected(item.id)) {
+                  <i class="pi pi-check"></i>
+                }
+              </span>
+
+              <span class="picker__text">
+                <span class="picker__title">{{ item.title }}</span>
+                @if (item.subtitle) {
+                  <span class="picker__subtitle">{{ item.subtitle }}</span>
+                }
+                @if (item.disabled && item.disabledReason) {
+                  <span class="picker__reason">{{ item.disabledReason }}</span>
+                }
+              </span>
+
+              @if (item.badges?.length) {
+                <span class="picker__badges">
+                  @for (badge of item.badges; track badge.text) {
+                    <span [class]="badgeClass(badge)" [attr.title]="badge.tooltip ?? null">
+                      {{ badge.text }}
+                    </span>
+                  }
+                </span>
+              }
+            </button>
+          </li>
+        } @empty {
+          <li class="picker__empty">{{ emptyText() }}</li>
+        }
+      </ul>
+    }
+
+    <footer class="picker__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="saving() || selectedCount() === 0"
+        (click)="onConfirm()"
+      >
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ confirmLabel() }}
+        @if (selectedCount() > 0) {
+          ({{ selectedCount() }})
+        }
+      </button>
+    </footer>
+  </div>
+</p-dialog>

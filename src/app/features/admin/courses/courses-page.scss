@@ -1,0 +1,160 @@
+/* Ortak yerleşim (.board, .rows, .row, .state, .detail__*) src/styles/_admin.scss'te.
+   Burada yalnızca bu ekrana özgü parçalar var. */
+
+.board__main,
+.board__detail {
+  padding: 14px 14px 16px;
+}
+
+.list__head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.list__filter {
+  min-width: 190px;
+}
+
+.list__filter--narrow {
+  min-width: 150px;
+}
+
+.list__note {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--p-text-muted-color);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+/* Açık görev sayısı: nötr rozetten ayrılsın diye marka rengiyle. */
+.row__badge--members {
+  background: color-mix(in srgb, var(--app-brand) 16%, transparent);
+  color: var(--app-brand);
+  font-variant-numeric: tabular-nums;
+}
+
+.detail__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.detail__section-head .detail__section-title {
+  margin: 0;
+}
+
+/* ── Birim görevleri ── */
+
+.assignments {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.assignment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 10px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+}
+
+/* Kapanmış görev soluk ama okunur: geçmiş gizlenmiyor, geri plana çekiliyor. */
+.assignment--closed {
+  border-style: dashed;
+}
+
+.assignment--closed .assignment__dept {
+  opacity: 0.6;
+}
+
+.assignment__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.assignment__dept {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.assignment__badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-brand) 16%, transparent);
+  color: var(--app-brand);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.assignment__sub {
+  font-size: 11px;
+  color: var(--p-text-muted-color);
+}
+
+.assignment__actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: 0 0 auto;
+}
+
+.assignments__empty {
+  padding: 10px;
+  border: 1px dashed var(--p-content-border-color);
+  border-radius: 8px;
+  color: var(--p-text-muted-color);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+/* ── Derse özgü ── */
+
+.row__badge--akts {
+  background: var(--p-content-hover-background);
+  color: var(--p-text-muted-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.row__badge--orphan {
+  background: color-mix(in srgb, #d97706 14%, transparent);
+  color: #b45309;
+}
+
+/* Müfredat satırı: zorunlu/seçmeli ve yarıyıl bir bakışta. */
+.assignment__badge--required {
+  background: color-mix(in srgb, var(--app-brand) 16%, transparent);
+  color: var(--app-brand);
+}
+
+.assignment__badge--elective {
+  background: var(--p-content-hover-background);
+  color: var(--p-text-muted-color);
+  font-weight: 500;
+}
+
+.assignment__badge--term {
+  background: var(--p-content-hover-background);
+  color: var(--p-text-muted-color);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}

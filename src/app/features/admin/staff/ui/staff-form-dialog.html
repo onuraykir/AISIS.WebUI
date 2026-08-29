@@ -1,0 +1,219 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '560px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    @if (!isEdit()) {
+      <section class="form__section" formGroupName="person">
+        <h4 class="form__section-title">Kimlik</h4>
+
+        <div class="form__field">
+          <label class="form__label" for="staff-tckn">TC Kimlik No</label>
+          <input
+            id="staff-tckn"
+            pInputText
+            formControlName="nationalId"
+            inputmode="numeric"
+            maxlength="11"
+            autocomplete="off"
+            placeholder="11 hane"
+          />
+          <p class="form__help">
+            Kişi bu numarayla <strong>bulunur veya oluşturulur</strong>. Zaten kayıtlıysa mevcut
+            kişi kullanılır; girilen bilgiler kayıtlı olandan farklıysa uyarılırsınız, kayıt
+            sessizce değişmez.
+          </p>
+
+          @if (
+            form.controls.person.controls.nationalId.touched &&
+            form.controls.person.controls.nationalId.invalid
+          ) {
+            <p class="form__error">TC Kimlik No 11 haneli olmalıdır.</p>
+          }
+        </div>
+
+        <div class="form__row">
+          <div class="form__field">
+            <label class="form__label" for="staff-name">Ad</label>
+            <input id="staff-name" pInputText formControlName="name" />
+            @if (
+              form.controls.person.controls.name.touched &&
+              form.controls.person.controls.name.invalid
+            ) {
+              <p class="form__error">Ad zorunludur.</p>
+            }
+          </div>
+
+          <div class="form__field">
+            <label class="form__label" for="staff-surname">Soyad</label>
+            <input id="staff-surname" pInputText formControlName="surname" />
+            @if (
+              form.controls.person.controls.surname.touched &&
+              form.controls.person.controls.surname.invalid
+            ) {
+              <p class="form__error">Soyad zorunludur.</p>
+            }
+          </div>
+        </div>
+
+        <div class="form__row">
+          <div class="form__field">
+            <label class="form__label" for="staff-birth">Doğum tarihi</label>
+            <input id="staff-birth" pInputText type="date" formControlName="birthDate" />
+          </div>
+
+          <div class="form__field">
+            <label class="form__label" for="staff-gender">Cinsiyet</label>
+            <p-select
+              inputId="staff-gender"
+              [options]="genderOptions"
+              optionLabel="label"
+              optionValue="value"
+              formControlName="gender"
+              appendTo="body"
+              class="form__select"
+            />
+          </div>
+        </div>
+
+        <div class="form__row">
+          <div class="form__field">
+            <label class="form__label" for="staff-email">E-posta</label>
+            <input id="staff-email" pInputText type="email" formControlName="email" />
+            @if (
+              form.controls.person.controls.email.touched &&
+              form.controls.person.controls.email.invalid
+            ) {
+              <p class="form__error">Geçerli bir e-posta girin.</p>
+            }
+          </div>
+
+          <div class="form__field">
+            <label class="form__label" for="staff-phone">Telefon</label>
+            <input id="staff-phone" pInputText formControlName="phone" inputmode="tel" />
+          </div>
+        </div>
+      </section>
+    }
+
+    <section class="form__section">
+      <h4 class="form__section-title">Görev dönemi</h4>
+
+      <div class="form__row">
+        <div class="form__field">
+          <label class="form__label" for="staff-registry">Sicil no</label>
+          <input
+            id="staff-registry"
+            pInputText
+            formControlName="registryNumber"
+            autocomplete="off"
+            placeholder="IDR-1001"
+          />
+          @if (form.controls.registryNumber.touched && form.controls.registryNumber.invalid) {
+            <p class="form__error">Sicil numarası zorunludur.</p>
+          }
+        </div>
+
+        <div class="form__field">
+          <label class="form__label" for="staff-hire">Göreve başlama</label>
+          <input id="staff-hire" pInputText type="date" formControlName="hireDate" />
+        </div>
+      </div>
+
+      <div class="form__field">
+        <label class="form__label" for="staff-jobtitle">Unvan</label>
+        <input id="staff-jobtitle" pInputText formControlName="jobTitle" placeholder="Uzman" />
+        <p class="form__help">
+          Unvan kişiye aittir; <strong>görev</strong> birime aittir ve her birim bağında ayrı
+          seçilir.
+        </p>
+      </div>
+
+      <p class="form__help">
+        İdari sicil, akademik sicilden <strong>ayrı bir kütüktür</strong>: aynı numara ikisinde de
+        bulunabilir.
+      </p>
+    </section>
+
+    @if (!isEdit()) {
+      <section class="form__section" formGroupName="firstAssignment">
+        <h4 class="form__section-title">İlk görev</h4>
+
+        <div class="form__field">
+          <label class="form__label" for="staff-dept">Birim</label>
+          <p-select
+            inputId="staff-dept"
+            [options]="departmentOptions()"
+            optionLabel="label"
+            optionValue="value"
+            optionDisabled="disabled"
+            formControlName="departmentId"
+            [filter]="true"
+            filterBy="label"
+            placeholder="İdari birim seçin"
+            appendTo="body"
+            class="form__select"
+          />
+          <p class="form__help">Yalnızca idari birimler listelenir. Pasif birime kayıt açılamaz.</p>
+
+          @if (
+            form.controls.firstAssignment.controls.departmentId.touched &&
+            form.controls.firstAssignment.controls.departmentId.invalid
+          ) {
+            <p class="form__error">Birim seçilmelidir.</p>
+          }
+        </div>
+
+        <div class="form__row">
+          <div class="form__field">
+            <label class="form__label" for="staff-duty">Görev</label>
+            <p-select
+              inputId="staff-duty"
+              [options]="dutyOptions"
+              optionLabel="label"
+              optionValue="value"
+              formControlName="duty"
+              appendTo="body"
+              class="form__select"
+            />
+          </div>
+
+          <div class="form__field">
+            <label class="form__label" for="staff-start">Başlangıç</label>
+            <input id="staff-start" pInputText type="date" formControlName="startDate" />
+            @if (
+              form.controls.firstAssignment.controls.startDate.touched &&
+              form.controls.firstAssignment.controls.startDate.invalid
+            ) {
+              <p class="form__error">Başlangıç tarihi zorunludur.</p>
+            }
+          </div>
+        </div>
+
+        <p class="form__help">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          İlk görev her zaman <strong>ana birimdir</strong> — kadronun bulunduğu yer. Sonradan
+          eklenen görevlerde bu seçilebilir; hiçbir zaman aynı anda iki açık ana birim olamaz.
+        </p>
+      </section>
+    }
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Oluştur' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

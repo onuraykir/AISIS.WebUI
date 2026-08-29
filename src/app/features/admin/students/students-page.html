@@ -1,0 +1,465 @@
+<app-admin-toolbar
+  title="Öğrenciler"
+  description="Öğrencilik dönemleri ve bölüm kayıtları. Anadal, ÇAP ve yandal ayrı kayıtlardır; anadal ayrı bir bayrak değil, kayıt türünün kendisidir."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'STUDENT'"
+      (click)="openCreate()"
+    >
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Öğrenci
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.total() }}</span>
+      <span class="stats__label">kayıt</span>
+    </div>
+    <div class="stats__item">
+      <span class="stats__value">{{ store.openCount() }}</span>
+      <span class="stats__label">açık</span>
+    </div>
+    @if (store.onLeaveCount() > 0) {
+      <div class="stats__item stats__item--attention">
+        <span class="stats__value">{{ store.onLeaveCount() }}</span>
+        <span class="stats__label">dondurulmuş</span>
+      </div>
+    }
+    @if (store.closedCount() > 0) {
+      <div class="stats__item">
+        <span class="stats__value">{{ store.closedCount() }}</span>
+        <span class="stats__label">kapanmış</span>
+      </div>
+    }
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Öğrenci listesi yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board">
+    <!-- ── Liste ── -->
+    <section class="app-card board__main" aria-label="Öğrenci listesi">
+      <header class="list__head">
+        <h3 class="pane__title">
+          <i class="pi pi-graduation-cap" aria-hidden="true"></i> Öğrencilik Dönemleri
+        </h3>
+
+        <app-admin-filter-bar
+          placeholder="Ad, TCKN veya öğrenci no…"
+          [search]="store.search()"
+          (searchChange)="onSearchChange($event)"
+          [dirty]="store.filtersDirty()"
+          (clear)="clearFilters()"
+        >
+          <ng-container filters>
+            <p-select
+              [options]="departmentFilterOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="store.departmentId()"
+              (ngModelChange)="store.departmentId.set($event); applyFilters()"
+              [filter]="true"
+              filterBy="label"
+              placeholder="Tüm bölümler"
+              appendTo="body"
+              class="list__filter"
+            />
+
+            <p-select
+              [options]="openStates"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="store.onlyOpen()"
+              (ngModelChange)="store.onlyOpen.set($event); applyFilters()"
+              appendTo="body"
+              class="list__filter list__filter--narrow"
+            />
+          </ng-container>
+        </app-admin-filter-bar>
+      </header>
+
+      <p class="list__note">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        Bölüm süzgeci <strong>açık</strong> kayda bakar; mezun olmuş bir kayıt o bölümde sayılmaz.
+      </p>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4, 5]; track row) {
+            <p-skeleton height="52px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (item of store.items(); track item.id) {
+            <li>
+              <div
+                class="row"
+                [class.row--selected]="store.selectedId() === item.id"
+                [class.row--passive]="!item.isOpen"
+              >
+                <button type="button" class="row__main" (click)="select(item)">
+                  <i class="row__icon pi pi-user" aria-hidden="true"></i>
+
+                  <span class="row__text">
+                    <span class="row__name">{{ item.fullName }}</span>
+                    <span class="row__sub">
+                      {{ item.enrollmentYear }} girişli
+                      @if (item.primaryDepartmentName) {
+                        · {{ item.primaryDepartmentName }}
+                      }
+                    </span>
+                  </span>
+
+                  <span class="row__meta">
+                    <code class="row__code">{{ item.studentNumber }}</code>
+
+                    @if (item.isOpen) {
+                      @if (isOnLeave(item)) {
+                        <span class="row__badge row__badge--onleave">Dondurulmuş</span>
+                      } @else if (item.openEnrollmentCount > 1) {
+                        <span
+                          class="row__badge row__badge--members"
+                          pTooltip="Açık bölüm kaydı sayısı — anadal dışında ÇAP veya yandal var"
+                          tooltipPosition="top"
+                        >
+                          {{ item.openEnrollmentCount }}
+                        </span>
+                      }
+                    } @else {
+                      <span class="row__badge row__badge--passive">
+                        {{ statusLabel(item.status) }}
+                      </span>
+                    }
+                  </span>
+                </button>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-graduation-cap state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">
+                {{ store.filtersDirty() ? 'Eşleşen kayıt yok' : 'Öğrenci kaydı yok' }}
+              </h3>
+              <p class="state__text">
+                {{
+                  store.filtersDirty()
+                    ? 'Süzgeçleri değiştirin veya temizleyin.'
+                    : 'Kayıt TCKN ile başlar: kişi bulunur veya oluşturulur, anadal kaydı aynı işlemde yazılır.'
+                }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Künye ── -->
+    <aside class="app-card board__detail" aria-label="Seçili öğrenci">
+      @if (store.detailLoading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3]; track row) {
+            <p-skeleton height="44px" />
+          }
+        </div>
+      } @else if (detail(); as student) {
+        <header class="detail__head">
+          <span class="detail__icon"><i class="pi pi-user" aria-hidden="true"></i></span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ student.person.fullName }}</h3>
+            <code class="detail__code">{{ student.studentNumber }}</code>
+          </div>
+        </header>
+
+        <p>
+          <span
+            class="status"
+            [class.status--active]="student.isOpen && !onLeave()"
+            [class.status--onleave]="onLeave()"
+          >
+            {{ statusLabel(student.status) }}
+          </span>
+        </p>
+
+        @if (onLeave()) {
+          <p class="detail__note detail__note--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Kayıt <strong>dondurulmuş</strong>. Öğrencilik sürüyor; bölüm kayıtları kapanmadı.
+          </p>
+        }
+
+        @if (!student.isOpen) {
+          <p class="detail__note detail__note--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Bu öğrencilik <strong>sonlandırılmış</strong>. Yeni bölüm kaydı eklenemez; kayıt
+            geçmişiyle birlikte durur.
+          </p>
+        }
+
+        <dl class="detail__facts">
+          <div>
+            <dt>TCKN</dt>
+            <dd>{{ student.person.nationalId }}</dd>
+          </div>
+          <div>
+            <dt>Kayıt yılı</dt>
+            <dd>{{ student.enrollmentYear }}</dd>
+          </div>
+          <div>
+            <dt>Ortalama</dt>
+            <dd>{{ student.gpa }}</dd>
+          </div>
+          <div>
+            <dt>Üniversiteye kayıt</dt>
+            <dd>{{ student.admissionDate ? (student.admissionDate | slice: 0 : 10) : '—' }}</dd>
+          </div>
+          @if (student.graduationDate) {
+            <div>
+              <dt>Mezuniyet</dt>
+              <dd>{{ student.graduationDate | slice: 0 : 10 }}</dd>
+            </div>
+          } @else {
+            <div>
+              <dt>Bitiş</dt>
+              <dd>{{ student.endDate ? (student.endDate | slice: 0 : 10) : 'sürüyor' }}</dd>
+            </div>
+          }
+          <div>
+            <dt>E-posta</dt>
+            <dd>{{ student.person.email || '—' }}</dd>
+          </div>
+        </dl>
+
+        <p class="detail__note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Kimlik bilgileri buradan değişmez — aynı kişi başka şeritlerde de kayıtlı olabilir.
+          Düzeltme <strong>Kişiler</strong> ekranından yapılır.
+        </p>
+
+        <!-- ── Bölüm kayıtları (K-D, bağ seviyesi) ── -->
+        <section class="detail__section">
+          <div class="detail__section-head">
+            <h4 class="detail__section-title">Bölüm kayıtları</h4>
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'CREATE'; operation: 'ENROLLMENT'"
+              [disabled]="store.saving() || recordClosed()"
+              (click)="openAddEnrollment()"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i> Bölüm
+            </button>
+          </div>
+
+          <ul class="assignments">
+            @for (enrollment of student.enrollments; track enrollment.id) {
+              <li class="assignment" [class.assignment--closed]="!enrollment.isOpen">
+                <div class="assignment__text">
+                  <span class="assignment__dept">
+                    {{ enrollment.departmentName }}
+                    @if (enrollment.isPrimary) {
+                      <span
+                        class="assignment__badge"
+                        pTooltip="Anadal — kayıt türünden okunur, ayrı bir alan yoktur"
+                        tooltipPosition="top"
+                      >
+                        Anadal
+                      </span>
+                    } @else {
+                      <span class="assignment__badge assignment__badge--kind">
+                        {{ kindLabel(enrollment) }}
+                      </span>
+                    }
+                  </span>
+                  <span class="assignment__sub">
+                    {{ levelLabel(enrollment) }}
+                    ·
+                    {{ enrollment.startDate | slice: 0 : 10 }}
+                    @if (enrollment.endDate) {
+                      – {{ enrollment.endDate | slice: 0 : 10 }} · {{ endReasonLabel(enrollment) }}
+                    } @else {
+                      – sürüyor
+                    }
+                  </span>
+                </div>
+
+                @if (enrollment.isOpen) {
+                  <div class="assignment__actions">
+                    <button
+                      type="button"
+                      class="row__action"
+                      pTooltip="Düzenle"
+                      tooltipPosition="top"
+                      aria-label="Bölüm kaydını düzenle"
+                      *appHasAction="'UPDATE'; operation: 'ENROLLMENT'"
+                      [disabled]="store.saving()"
+                      (click)="openEditEnrollment(enrollment)"
+                    >
+                      <i class="pi pi-pencil"></i>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="row__action"
+                      pTooltip="Bölüm kaydını kapat"
+                      tooltipPosition="top"
+                      aria-label="Bölüm kaydını kapat"
+                      *appHasAction="'WITHDRAW'; operation: 'ENROLLMENT'"
+                      [disabled]="store.saving()"
+                      (click)="openCloseEnrollment(enrollment)"
+                    >
+                      <i class="pi pi-sign-out"></i>
+                    </button>
+                  </div>
+                }
+              </li>
+            } @empty {
+              <li class="assignments__empty">Bölüm kaydı yok.</li>
+            }
+          </ul>
+
+          <p class="detail__note">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            ÇAP'lı öğrenci anadaldan mezun olmadan ÇAP'tan mezun olabilir; bölüm kaydını kapatmak
+            öğrenciliği <strong>kapatmaz</strong>.
+          </p>
+        </section>
+
+        <!-- ── Öğrenciliğin tamamı (K-D, kayıt seviyesi) ── -->
+        @if (!recordClosed()) {
+          <section class="detail__section">
+            <h4 class="detail__section-title">Öğrencilik durumu</h4>
+
+            <div class="lifecycle">
+              @if (onLeave()) {
+                <button
+                  type="button"
+                  class="btn btn--ghost btn--sm"
+                  *appHasAction="'RESUME'; operation: 'STUDENT_LIFECYCLE'"
+                  [disabled]="store.saving()"
+                  (click)="toggleLeave()"
+                >
+                  <i class="pi pi-play" aria-hidden="true"></i> Dondurmayı Kaldır
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="btn btn--ghost btn--sm"
+                  *appHasAction="'SUSPEND'; operation: 'STUDENT_LIFECYCLE'"
+                  [disabled]="store.saving()"
+                  (click)="toggleLeave()"
+                >
+                  <i class="pi pi-pause" aria-hidden="true"></i> Kaydı Dondur
+                </button>
+              }
+
+              @for (option of endOptions; track option.kind) {
+                <button
+                  type="button"
+                  class="btn btn--sm"
+                  [class.btn--danger]="option.danger"
+                  [class.btn--ghost]="!option.danger"
+                  *appHasAction="option.action; operation: 'STUDENT_LIFECYCLE'"
+                  [disabled]="store.saving()"
+                  (click)="openEnd(option)"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
+
+            <p class="detail__note">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              Dondurma sonlandırma <strong>değildir</strong>: kayıt açık kalır. Sonlandırma ise
+              kalan açık bölüm kayıtlarını da kapatır ve her biri ayrı bir yetkidir.
+            </p>
+          </section>
+        }
+
+        <footer class="detail__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasAction="'UPDATE'; operation: 'STUDENT'"
+            [disabled]="store.saving()"
+            (click)="openEdit()"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i> Düzenle
+          </button>
+        </footer>
+
+        <p class="detail__note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Kayıt <strong>silinmez</strong>: akreditasyon hesapları geçmiş öğrencilere dayanıyor.
+          Mezun bir öğrenciyi silmek geçmiş dönem raporlarını bozardı.
+        </p>
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Kayıt seçilmedi</h3>
+          <p class="state__text">
+            Künyesini ve bölüm kayıtlarını görmek için soldan bir öğrencilik dönemi seçin.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<app-student-form-dialog
+  [(visible)]="formOpen"
+  [student]="editing() ? detail() : null"
+  [departmentOptions]="store.departmentOptions()"
+  [saving]="store.saving()"
+  (save)="onFormSave($event)"
+/>
+
+<app-student-enrollment-dialog
+  [(visible)]="enrollmentOpen"
+  [enrollment]="enrollmentInDialog()"
+  [departmentOptions]="store.departmentOptions()"
+  [hasOtherOpenPrimary]="hasOtherOpenPrimary()"
+  [saving]="store.saving()"
+  (save)="onEnrollmentSave($event)"
+/>
+
+<app-enrollment-close-dialog
+  [(visible)]="closeOpen"
+  [description]="closeDescription()"
+  [saving]="store.saving()"
+  (save)="onEnrollmentClose($event)"
+/>
+
+<app-student-end-dialog
+  [(visible)]="endOpen"
+  [heading]="endOption()?.heading ?? ''"
+  [description]="endOption()?.description ?? ''"
+  [confirmLabel]="endOption()?.label ?? ''"
+  [danger]="endOption()?.danger ?? false"
+  [saving]="store.saving()"
+  (save)="onEndSave($event)"
+/>

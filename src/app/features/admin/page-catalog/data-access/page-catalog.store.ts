@@ -5,12 +5,7 @@ import { ApiFailure } from '@core/api/api-result.model';
 import { ModuleAdminApi } from '../../module-tree/data-access/module-admin.api';
 import { ModuleTreeNode } from '../../module-tree/data-access/module.models';
 import { PageAdminApi } from './page-admin.api';
-import {
-  ModuleOption,
-  PageCreateCommand,
-  PageListItem,
-  PageUpdateCommand,
-} from './page.models';
+import { ModuleOption, PageCreateCommand, PageListItem, PageUpdateCommand } from './page.models';
 
 export type CatalogFilter = 'all' | 'placed' | 'pool';
 
@@ -166,7 +161,7 @@ export class PageCatalogStore {
     }
   }
 
-async create(command: PageCreateCommand): Promise<boolean> {
+  async create(command: PageCreateCommand): Promise<boolean> {
     return this.runCommand(async () => {
       const created = await firstValueFrom(this.pageApi.create(command));
       await this.load();
@@ -193,7 +188,7 @@ async create(command: PageCreateCommand): Promise<boolean> {
   }
 
   private async runCommand(action: () => Promise<string>): Promise<boolean> {
-this._saving.set(true);
+    this._saving.set(true);
     this._feedback.set(null);
 
     try {

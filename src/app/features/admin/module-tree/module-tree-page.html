@@ -8,7 +8,12 @@
       Yenile
     </button>
 
-    <button type="button" class="btn btn--primary" *appHasAction="'CREATE'; operation: 'MODULE'" (click)="openCreateRoot()">
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'MODULE'"
+      (click)="openCreateRoot()"
+    >
       <i class="pi pi-plus" aria-hidden="true"></i>
       Ana Modül
     </button>
@@ -103,7 +108,8 @@
                     </li>
                   } @empty {
                     <li class="tree__hint">
-                      Alt modül yok — satırdaki <i class="pi pi-plus" aria-hidden="true"></i> ile ekleyebilirsiniz.
+                      Alt modül yok — satırdaki <i class="pi pi-plus" aria-hidden="true"></i> ile
+                      ekleyebilirsiniz.
                     </li>
                   }
                 </ul>
@@ -118,7 +124,9 @@
     <aside class="app-card board__detail" aria-label="Seçili modül">
       @if (selected(); as node) {
         <header class="detail__head">
-          <span class="detail__icon"><i class="{{ node.icon || 'pi pi-folder' }}" aria-hidden="true"></i></span>
+          <span class="detail__icon"
+            ><i class="{{ node.icon || 'pi pi-folder' }}" aria-hidden="true"></i
+          ></span>
           <div class="detail__identity">
             <h3 class="detail__name">{{ node.name }}</h3>
             <code class="detail__code">{{ node.code }}</code>
@@ -144,7 +152,9 @@
           </div>
           <div>
             <dt>Durum</dt>
-            <dd [class.detail__passive]="!node.isActive">{{ node.isActive ? 'Aktif' : 'Pasif' }}</dd>
+            <dd [class.detail__passive]="!node.isActive">
+              {{ node.isActive ? 'Aktif' : 'Pasif' }}
+            </dd>
           </div>
         </dl>
 
@@ -168,7 +178,9 @@
             <button
               type="button"
               class="btn btn--ghost"
-              [disabled]="store.saving() || moveTarget() === node.parentModuleId || !!moveBlockedReason()"
+              [disabled]="
+                store.saving() || moveTarget() === node.parentModuleId || !!moveBlockedReason()
+              "
               (click)="applyMove()"
             >
               Taşı

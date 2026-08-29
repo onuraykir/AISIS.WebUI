@@ -1,0 +1,106 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '470px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="sem-code">
+        Kod
+        @if (isEdit()) {
+          <span class="form__hint">değiştirilemez</span>
+        }
+      </label>
+      <input
+        id="sem-code"
+        pInputText
+        formControlName="code"
+        placeholder="2026-2027-GUZ"
+        autocomplete="off"
+        spellcheck="false"
+        (input)="onCodeInput($event)"
+      />
+      <p class="form__help">Ortamlar arası sabit tutamaç. Yalnızca A–Z, 0–9 ve tire.</p>
+
+      @if (form.controls.code.touched && form.controls.code.invalid) {
+        <p class="form__error">Kod zorunludur ve yalnızca A–Z, 0–9, tire içerebilir.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="sem-name">Ad</label>
+      <input id="sem-name" pInputText formControlName="name" placeholder="2026-2027 Güz" />
+
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <p class="form__error">Ad zorunludur.</p>
+      }
+    </div>
+
+    <div class="form__row">
+      <div class="form__field">
+        <label class="form__label" for="sem-start">Başlangıç</label>
+        <input id="sem-start" pInputText type="date" formControlName="startDate" />
+        @if (form.controls.startDate.touched && form.controls.startDate.invalid) {
+          <p class="form__error">Başlangıç tarihi zorunludur.</p>
+        }
+      </div>
+
+      <div class="form__field">
+        <label class="form__label" for="sem-end">Bitiş</label>
+        <input id="sem-end" pInputText type="date" formControlName="endDate" />
+        @if (form.controls.endDate.touched && form.controls.endDate.invalid) {
+          <p class="form__error">Bitiş tarihi zorunludur.</p>
+        }
+      </div>
+    </div>
+
+    @if (periodInvalid()) {
+      <p class="form__error">Bitiş tarihi başlangıç tarihinden önce olamaz.</p>
+    }
+
+    <div class="form__field">
+      <label class="form__label" for="sem-status">Durum</label>
+      <p-select
+        inputId="sem-status"
+        [options]="statusOptions"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="status"
+        appendTo="body"
+        class="form__select"
+      />
+      <p class="form__help">{{ statusHint() }}</p>
+    </div>
+
+    @if (openConflict(); as openName) {
+      <p class="form__warn">
+        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+        <strong>{{ openName }}</strong> dönemi hâlâ açık. Aynı anda yalnızca bir dönem açık olabilir
+        — önce onu not girişine alın. Bu hâliyle kaydetme reddedilecek.
+      </p>
+    }
+
+    <p class="form__help">
+      <i class="pi pi-info-circle" aria-hidden="true"></i>
+      Güncel dönem buradan seçilmez: uygulamanın varsayılan bağlamını değiştirdiği için künye
+      panelinden ayrıca yapılır.
+    </p>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving() || periodInvalid()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Oluştur' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>
