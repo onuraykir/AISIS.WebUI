@@ -568,6 +568,78 @@ Rol bazlı ekranlar view'a hiç uğramaz — tek tablo, tek join.
 
 ---
 
+## 3.8 Değerlendirme etkinliği artık açılışa bağlı (Modül 4 — UYGULANDI)
+
+**Karar K-H:** `AssessmentActivity` derse değil **ders açılışına** (`CourseInSemester`)
+bağlıdır ve türünü ortak sözlükten (`ActivityDefinition`) alır.
+
+### Neden
+
+`AssessmentActivity.CourseId` yanlıştı: aynı ders her dönem yeniden açılıyor, ama vize
+tek kayıt olarak duruyordu. Sonuçları:
+
+- 2025 Güz'ün vizesi ile 2026 Güz'ün vizesi aynı satırdı; ikincisi birincinin sorularını
+  ve çıktı bağlarını miras alıyordu.
+- "Bu dersin notları" sorgusu **bütün dönemleri** getiriyordu.
+- `ActivityType` bir enum'du — kurum yeni bir tür ekleyemiyordu, ve enum ile serbest
+  metin arasında bir yerdeydi.
+
+### Ne değişti
+
+```
+ÖNCE:  AssessmentActivity (CourseId, Name, ActivityType enum, MaxPoint)
+SONRA: AssessmentActivity (CourseInSemesterId, ActivityDefinitionId, Name, MaxPoint)
+```
+
+- `ActivityTypes` enum'u **silindi**; yerine `core.ActivityDefinitions` sözlüğü
+  (`/tanim/etkinlik`, sayfa 158). Seed'de 8 tanım geliyor — boş sözlükle açılış ekranı
+  kullanılamazdı, aynı gerekçe `ActionDefinition` havuzunda da vardı.
+- `UX_AssessmentActivities_Offering_Name` (CourseInSemesterId, Name): Excel eşlemesi
+  **adla** yapılıyor; ad gerçek bir anahtar olmadan `GroupBy().First()` ile tahmin
+  yürütmek gerekiyordu.
+- Açılış silinince etkinlikleri de gider (Cascade); **tanım** silinemez (Restrict) ve
+  servis zaten kullanılan tanımın silinmesini engelliyor.
+
+### Not akışına etkisi
+
+Dosya kolu artık **yeni etkinlik açamaz.** Excel'de tür bilgisi yok, tür de zorunlu;
+dolayısıyla adı açılışta bulunmayan her sütun `UNKNOWN_ACTIVITY` engelleyici sorunu
+üretir. Bu, ders ve öğrenci için zaten konmuş olan kuralın aynısı: **yapı önceden
+kurulur, dosya yalnızca puan taşır.** İskelet Ders Açılışı ekranından kurulur.
+
+### Dönem durumu kapısı ikiye ayrıldı
+
+| Kapı | Planlı | Açık | Not Girişi | Kapalı |
+|---|---|---|---|---|
+| `CheckOfferingWritable` (ders/hoca/öğrenci) | ✓ | ✓ | ✗ | ✗ |
+| `CheckActivityWritable` (değerlendirme yapısı) | ✓ | ✓ | ✓ | ✗ |
+
+Not girişi fazı **tam da sınavın yapıldığı** zamandır; o fazda etkinlik ekleyemezsek
+hoca dönem açtırmak zorunda kalır. Yalnızca kapalı dönem donuktur.
+
+### Ders çıktısı matrisi
+
+`CourseOutcome` ders düzeyinde kaldı — dersin öğrenme çıktıları her dönem aynıdır.
+Ama **ağırlık matrisi** aktivitelere dayandığı için açılış kapsamlıdır:
+`GET /api/CourseOutcomeGrid/{courseId}?acilisId=` — açılış verilmezse yalnızca
+çıktılar döner, kolonlar boş gelir. Sahiplik ayrıca denetleniyor: verilen açılış
+o dersin açılışı değilse kapsam düşürülür.
+
+### Dokunulan dosyalar
+
+| Katman | Dosya |
+|---|---|
+| Varlık | `AssessmentActivity`, `Course` (koleksiyon kaldırıldı), `CourseInSemester` (koleksiyon eklendi) |
+| Eşleme | `AssessmentActivityMapping`, `CourseMapping` |
+| Sözleşme | 7 assessment DTO'su `CourseId` → `CourseInSemesterId`; `ScoreFileUploadRequest` |
+| Servis | `AssessmentService`, `MapperService`, `CalculatorService`, `AssessmentGridReader`, `AssessmentSnapshotLoader`, `AssessmentParserService`, `AssessmentFileService`, `CourseOutcomeSnapshotLoader`, `CourseOutcomeGridReader` |
+| Yardımcı | `IdResolverHelper` (yeni `UNKNOWN_ACTIVITY`) |
+| Uç | `CourseInSemesterAdmin` +3 uç, `CourseOutcomeGrid` (`acilisId`) |
+| Seed | `OFFERING_ACTIVITY` işlemi (157), 8 `ActivityDefinition` |
+| Ön yüz | `offerings/` model+api+store, `ui/offering-activity-dialog`, ekran bölümü |
+
+---
+
 ## 4. Açık işler
 
 ### 4.1 Hemen sıradakiler
@@ -615,6 +687,13 @@ Rol bazlı ekranlar view'a hiç uğramaz — tek tablo, tek join.
       döngü (D4/D7), soft delete'in elle kaskadı (S2/D13), rol kapanınca açık
       bağların kapatılması (E2).
 
+- [ ] **Modül 4 etkinlik migration'ı üretilmedi** (§3.8). `AssessmentActivities`
+      tablosu `CourseId` + `ActivityType` bırakıp `CourseInSemesterId` +
+      `ActivityDefinitionId` alıyor; `UX_AssessmentActivities_Offering_Name` ekleniyor;
+      seed'e 8 `ActivityDefinition`, sayfa 157'ye `OFFERING_ACTIVITY` işlemi giriyor.
+      **Yıkıcı değil:** `AssessmentActivities`, `ActivityItems` ve
+      `StudentActivityScores` tabloları boş (29 Ağustos'ta sayıldı).
+
 - [ ] **Kimlik doğrulama — kalan kısım.** Şifre altyapısı ve süper kullanıcı
       yapıldı (§3.6). Kalan: JWT login, refresh token, lockout, `UserContext`.
       Bkz. `AuthenticationSolution/docs/AUTH-TASARIM-YOL-HARITASI.md`.
@@ -635,6 +714,12 @@ Rol bazlı ekranlar view'a hiç uğramaz — tek tablo, tek join.
 - [ ] Pano (dashboard) içerik ucu — ana sayfa şu an dürüst bir "bağlanmadı" ekranı.
 - [ ] Bildirim ucu — zil boş.
 - [ ] Akademik dönem / birim bağlam ucu — ince bardaki çipler bu yüzden kaldırıldı.
+- [ ] **Etkinliğin soruları (`ActivityItem`) ekrandan girilemiyor.** Açılış ekranı
+      etkinliği ve tam puanını kuruyor; soru kırılımı hâlâ yalnızca not gridinden
+      geliyor. Sayfa 120 "Değerlendirme Etkinlikleri" bu boşluğu dolduracak.
+- [ ] **`ProgramOutcomeFile` ve `ProgramOutcomeResult` hâlâ denormalize**
+      (`CourseId` + `SemesterId`). İkisi de açılıştan türetilebilir;
+      `CalculatorService` şimdilik açılışı okuyup ikisini dolduruyor.
 - [ ] Yönetim ekranlarındaki **"Örnek veriyle göster" demo modu kaldırıldı**
       (kapsam dışı bir temizlikti; Onur "böyle kalsın" dedi). Geri istenirse
       5 store + 5 şablon + 5 demo dosyası yeniden yazılacak.

@@ -1,0 +1,75 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '440px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="crs-code">
+        Ders kodu
+        @if (isEdit()) {
+          <span class="form__hint">değiştirilemez</span>
+        }
+      </label>
+      <input
+        id="crs-code"
+        pInputText
+        formControlName="courseCode"
+        placeholder="BLM101"
+        autocomplete="off"
+        spellcheck="false"
+        (input)="onCodeInput($event)"
+      />
+      <p class="form__help">
+        Yalnızca A–Z ve 0–9. Not Excel'i dersi bu kodla eşliyor; sonradan değişirse geçmiş
+        yüklemeler eşleşmez.
+      </p>
+
+      @if (form.controls.courseCode.touched && form.controls.courseCode.invalid) {
+        <p class="form__error">Ders kodu zorunludur ve yalnızca A–Z, 0–9 içerebilir.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="crs-name">Ders adı</label>
+      <input id="crs-name" pInputText formControlName="name" placeholder="Algoritmalar" />
+
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <p class="form__error">Ders adı zorunludur.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="crs-akts">AKTS</label>
+      <input id="crs-akts" pInputText type="number" formControlName="akts" min="0" max="60" />
+
+      @if (form.controls.akts.touched && form.controls.akts.invalid) {
+        <p class="form__error">AKTS 0 ile 60 arasında olmalıdır.</p>
+      }
+    </div>
+
+    <p class="form__help">
+      <i class="pi pi-info-circle" aria-hidden="true"></i>
+      Dersin hangi bölümlerde olduğu ve zorunlu mu seçmeli mi olduğu
+      <strong>müfredat bağında</strong> tutuluyor — aynı ders bir bölümde zorunlu, başkasında
+      seçmeli olabilir. Künye panelinden eklenir.
+    </p>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Oluştur' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

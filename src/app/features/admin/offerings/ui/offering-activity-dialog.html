@@ -1,0 +1,100 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '440px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="act-def">
+        Tür
+        @if (isEdit()) {
+          <span class="form__hint">değiştirilemez</span>
+        }
+      </label>
+      <p-select
+        inputId="act-def"
+        [options]="definitionOptions()"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="activityDefinitionId"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Vize, Final, Ödev…"
+        appendTo="body"
+        class="form__select"
+      />
+      <p class="form__help">
+        Ortak sözlükten gelir. Listede yoksa önce
+        <strong>Etkinlik Tanımları</strong> ekranından ekleyin.
+      </p>
+
+      @if (
+        form.controls.activityDefinitionId.touched && form.controls.activityDefinitionId.invalid
+      ) {
+        <p class="form__error">Tür seçilmelidir.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="act-name">
+        Ad
+        <span class="form__hint">isteğe bağlı</span>
+      </label>
+      <input
+        id="act-name"
+        pInputText
+        formControlName="name"
+        [placeholder]="selectedDefinitionName() || 'Vize 1'"
+        autocomplete="off"
+      />
+      <p class="form__help">
+        Boş bırakılırsa
+        <strong>{{ selectedDefinitionName() || 'türün adı' }}</strong> kullanılır. Aynı türden
+        ikincisini eklerken ayırt edici bir ad verin — not dosyasındaki sütun başlığı budur.
+      </p>
+
+      @if (nameTaken()) {
+        <p class="form__error">
+          Bu açılışta <strong>{{ effectiveName() }}</strong> adında bir etkinlik zaten var.
+        </p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="act-max">Tam puan</label>
+      <input
+        id="act-max"
+        pInputText
+        type="number"
+        formControlName="maxPoint"
+        min="0"
+        max="1000"
+        step="1"
+      />
+      <p class="form__help">
+        Etkinliğin toplam puanı. Soruların puanları bu etkinliğin altında ayrıca girilir.
+      </p>
+
+      @if (form.controls.maxPoint.touched && form.controls.maxPoint.invalid) {
+        <p class="form__error">Tam puan 0 ile 1000 arasında olmalıdır.</p>
+      }
+    </div>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving() || nameTaken()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Ekle' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

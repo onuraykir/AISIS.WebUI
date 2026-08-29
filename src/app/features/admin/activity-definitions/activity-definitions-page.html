@@ -1,0 +1,164 @@
+<app-admin-toolbar
+  title="Etkinlik Tanımları"
+  description="Vize, final, ödev… Ders açılışına etkinlik eklenirken buradan seçilir. Ortak sözlük olduğu için puan, ağırlık ve sorular burada değil, açılışta belirlenir."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'ACTIVITY_DEFINITION'"
+      (click)="openCreate()"
+    >
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Tanım
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.total() }}</span>
+      <span class="stats__label">tanım</span>
+    </div>
+    @if (store.unusedCount() > 0) {
+      <div class="stats__item">
+        <span class="stats__value">{{ store.unusedCount() }}</span>
+        <span class="stats__label">hiç kullanılmamış</span>
+      </div>
+    }
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Etkinlik tanımları yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board board--single">
+    <section class="app-card board__main" aria-label="Etkinlik tanımları">
+      <header class="list__head">
+        <h3 class="pane__title"><i class="pi pi-tags" aria-hidden="true"></i> Sözlük</h3>
+
+        <app-admin-filter-bar
+          placeholder="Kod veya ad…"
+          [search]="store.search()"
+          (searchChange)="onSearchChange($event)"
+          [dirty]="store.search().length > 0"
+          (clear)="clearFilters()"
+        />
+      </header>
+
+      <p class="list__note">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        Aynı tanım her dönem yeniden kullanılır; kullanım sayısı kaç ders açılışında geçtiğini
+        gösterir.
+      </p>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4]; track row) {
+            <p-skeleton height="48px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (item of store.items(); track item.id) {
+            <li>
+              <div class="row">
+                <span class="row__main">
+                  <i class="row__icon pi pi-tag" aria-hidden="true"></i>
+
+                  <span class="row__text">
+                    <span class="row__name">{{ item.name }}</span>
+                    <span class="row__sub">
+                      @if (item.usageCount > 0) {
+                        {{ item.usageCount }} ders açılışında kullanılıyor
+                      } @else {
+                        Henüz hiçbir açılışta kullanılmadı
+                      }
+                    </span>
+                  </span>
+
+                  <span class="row__meta">
+                    @if (item.usageCount > 0) {
+                      <span class="row__badge row__badge--usage">{{ item.usageCount }}</span>
+                    } @else {
+                      <span class="row__badge row__badge--unused">Kullanılmamış</span>
+                    }
+                    <code class="row__code">{{ item.code }}</code>
+                  </span>
+                </span>
+
+                <div class="row__actions">
+                  <button
+                    type="button"
+                    class="row__action"
+                    pTooltip="Düzenle"
+                    tooltipPosition="top"
+                    aria-label="Düzenle"
+                    *appHasAction="'UPDATE'; operation: 'ACTIVITY_DEFINITION'"
+                    [disabled]="store.saving()"
+                    (click)="openEdit(item)"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    aria-label="Sil"
+                    *appHasAction="'DELETE'; operation: 'ACTIVITY_DEFINITION'"
+                    [disabled]="store.saving() || !!deleteBlockedReason(item)"
+                    [pTooltip]="deleteBlockedReason(item) ?? 'Sil'"
+                    tooltipPosition="top"
+                    (click)="confirmDelete(item)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-tags state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">
+                {{ store.search() ? 'Eşleşen tanım yok' : 'Tanım yok' }}
+              </h3>
+              <p class="state__text">
+                {{
+                  store.search()
+                    ? 'Aramayı değiştirin.'
+                    : 'Ders açılışında etkinlik seçebilmek için önce Vize, Final gibi tanımlar oluşturun.'
+                }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+}
+
+<app-activity-definition-dialog
+  [(visible)]="dialogOpen"
+  [definition]="definitionInDialog()"
+  [saving]="store.saving()"
+  (save)="onSave($event)"
+/>
+
+<p-confirmdialog />

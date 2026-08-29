@@ -1,0 +1,381 @@
+<app-admin-toolbar
+  title="Dersler"
+  description="Ders tanımları ve müfredat bağları. Bir ders birden fazla bölümün müfredatında olabilir ve her bölümde zorunlu ya da seçmeli olması ayrı ayrı belirlenir."
+>
+  <ng-container actions>
+    <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+      <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i>
+      Yenile
+    </button>
+
+    <button
+      type="button"
+      class="btn btn--primary"
+      *appHasAction="'CREATE'; operation: 'COURSE'"
+      (click)="openCreate()"
+    >
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Ders
+    </button>
+  </ng-container>
+
+  <div stats class="stats">
+    <div class="stats__item">
+      <span class="stats__value">{{ store.total() }}</span>
+      <span class="stats__label">ders</span>
+    </div>
+    @if (store.orphanCount() > 0) {
+      <div class="stats__item stats__item--attention">
+        <span class="stats__value">{{ store.orphanCount() }}</span>
+        <span class="stats__label">müfredatsız</span>
+      </div>
+    }
+  </div>
+</app-admin-toolbar>
+
+@if (store.feedback(); as feedback) {
+  <p-message [severity]="feedback.severity" styleClass="admin-banner" [closable]="true">
+    {{ feedback.text }}
+  </p-message>
+}
+
+@if (store.error(); as error) {
+  <div class="app-card state">
+    <i class="pi pi-exclamation-circle state__icon" aria-hidden="true"></i>
+    <h3 class="state__title">Ders listesi yüklenemedi</h3>
+    <p class="state__text">{{ error }}</p>
+    <div class="state__actions">
+      <button type="button" class="btn btn--primary" (click)="reload()">Tekrar dene</button>
+    </div>
+  </div>
+} @else {
+  <div class="board">
+    <!-- ── Liste ── -->
+    <section class="app-card board__main" aria-label="Ders listesi">
+      <header class="list__head">
+        <h3 class="pane__title"><i class="pi pi-book" aria-hidden="true"></i> Dersler</h3>
+
+        <app-admin-filter-bar
+          placeholder="Kod veya ad…"
+          [search]="store.search()"
+          (searchChange)="onSearchChange($event)"
+          [dirty]="store.filtersDirty()"
+          (clear)="clearFilters()"
+        >
+          <ng-container filters>
+            <p-select
+              [options]="departmentFilterOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="store.departmentId()"
+              (ngModelChange)="store.departmentId.set($event); applyFilters()"
+              [filter]="true"
+              filterBy="label"
+              placeholder="Tüm bölümler"
+              appendTo="body"
+              class="list__filter"
+            />
+          </ng-container>
+        </app-admin-filter-bar>
+      </header>
+
+      <p class="list__note">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        Bölüm süzgeci <strong>müfredata</strong> bakar, açılışa değil — dönemden bağımsızdır.
+      </p>
+
+      @if (store.loading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3, 4, 5]; track row) {
+            <p-skeleton height="52px" />
+          }
+        </div>
+      } @else {
+        <ul class="rows">
+          @for (item of store.items(); track item.id) {
+            <li>
+              <div class="row" [class.row--selected]="store.selectedId() === item.id">
+                <button type="button" class="row__main" (click)="select(item)">
+                  <i class="row__icon pi pi-book" aria-hidden="true"></i>
+
+                  <span class="row__text">
+                    <span class="row__name">{{ item.name }}</span>
+                    <span class="row__sub">
+                      {{ item.departmentCount }} bölüm · {{ item.qualifiedInstructorCount }} hoca
+                      @if (item.offeringCount > 0) {
+                        · {{ item.offeringCount }} dönemde açıldı
+                      }
+                    </span>
+                  </span>
+
+                  <span class="row__meta">
+                    @if (item.departmentCount === 0) {
+                      <span
+                        class="row__badge row__badge--orphan"
+                        pTooltip="Hiçbir müfredatta değil; açılsa bile aday öğrenci çıkmaz"
+                        tooltipPosition="top"
+                      >
+                        Müfredatsız
+                      </span>
+                    }
+                    <span class="row__badge row__badge--akts">{{ item.akts }} AKTS</span>
+                    <code class="row__code">{{ item.courseCode }}</code>
+                  </span>
+                </button>
+              </div>
+            </li>
+          } @empty {
+            <li class="state state--inline">
+              <i class="pi pi-book state__icon" aria-hidden="true"></i>
+              <h3 class="state__title">
+                {{ store.filtersDirty() ? 'Eşleşen ders yok' : 'Ders yok' }}
+              </h3>
+              <p class="state__text">
+                {{
+                  store.filtersDirty()
+                    ? 'Süzgeçleri değiştirin veya temizleyin.'
+                    : 'Ders açılışı ve notlar bir ders tanımına bağlanır; önce ders oluşturun.'
+                }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ── Künye ── -->
+    <aside class="app-card board__detail" aria-label="Seçili ders">
+      @if (store.detailLoading()) {
+        <div class="skeletons">
+          @for (row of [1, 2, 3]; track row) {
+            <p-skeleton height="44px" />
+          }
+        </div>
+      } @else if (detail(); as course) {
+        <header class="detail__head">
+          <span class="detail__icon"><i class="pi pi-book" aria-hidden="true"></i></span>
+          <div class="detail__identity">
+            <h3 class="detail__name">{{ course.name }}</h3>
+            <code class="detail__code">{{ course.courseCode }}</code>
+          </div>
+        </header>
+
+        <dl class="detail__facts">
+          <div>
+            <dt>AKTS</dt>
+            <dd>{{ course.akts }}</dd>
+          </div>
+          <div>
+            <dt>Müfredat</dt>
+            <dd>{{ course.departments.length }} bölüm</dd>
+          </div>
+          <div>
+            <dt>Açılış</dt>
+            <dd>{{ course.offeringCount }} dönem</dd>
+          </div>
+        </dl>
+
+        <!-- ── Müfredat ── -->
+        <section class="detail__section">
+          <div class="detail__section-head">
+            <h4 class="detail__section-title">Müfredat</h4>
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'CREATE'; operation: 'COURSE_CURRICULUM'"
+              [disabled]="store.saving()"
+              (click)="openAddDepartment()"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i> Bölüm
+            </button>
+          </div>
+
+          <ul class="assignments">
+            @for (link of course.departments; track link.id) {
+              <li class="assignment">
+                <div class="assignment__text">
+                  <span class="assignment__dept">
+                    {{ link.departmentName }}
+                    <span
+                      class="assignment__badge"
+                      [class.assignment__badge--required]="link.isRequired"
+                      [class.assignment__badge--elective]="!link.isRequired"
+                    >
+                      {{ link.isRequired ? 'Zorunlu' : 'Seçmeli' }}
+                    </span>
+                    @if (link.recommendedTerm) {
+                      <span class="assignment__badge assignment__badge--term">
+                        {{ link.recommendedTerm }}. yarıyıl
+                      </span>
+                    }
+                  </span>
+                  <span class="assignment__sub">{{ link.departmentCode }}</span>
+                </div>
+
+                <div class="assignment__actions">
+                  <button
+                    type="button"
+                    class="row__action"
+                    pTooltip="Düzenle"
+                    tooltipPosition="top"
+                    aria-label="Müfredat bağını düzenle"
+                    *appHasAction="'UPDATE'; operation: 'COURSE_CURRICULUM'"
+                    [disabled]="store.saving()"
+                    (click)="openEditDepartment(link)"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    pTooltip="Müfredattan çıkar"
+                    tooltipPosition="top"
+                    aria-label="Müfredattan çıkar"
+                    *appHasAction="'DELETE'; operation: 'COURSE_CURRICULUM'"
+                    [disabled]="store.saving()"
+                    (click)="removeDepartment(link)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </li>
+            } @empty {
+              <li class="assignments__empty">
+                Hiçbir bölümün müfredatında değil. Açılsa bile aday öğrenci çıkmaz.
+              </li>
+            }
+          </ul>
+        </section>
+
+        <!-- ── Verebilecek hocalar ── -->
+        <section class="detail__section">
+          <div class="detail__section-head">
+            <h4 class="detail__section-title">Verebilecek hocalar</h4>
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'CREATE'; operation: 'COURSE_INSTRUCTOR'"
+              [disabled]="store.saving()"
+              (click)="openInstructorPicker()"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i> Hoca
+            </button>
+          </div>
+
+          <ul class="assignments">
+            @for (instructor of course.qualifiedInstructors; track instructor.id) {
+              <li class="assignment" [class.assignment--closed]="!instructor.isOpen">
+                <div class="assignment__text">
+                  <span class="assignment__dept">
+                    {{ instructor.academicTitle }} {{ instructor.fullName }}
+                    @if (!instructor.isOpen) {
+                      <span class="assignment__badge assignment__badge--elective">
+                        Görevi sona ermiş
+                      </span>
+                    }
+                  </span>
+                  <span class="assignment__sub">{{ instructor.registryNumber }}</span>
+                </div>
+
+                <div class="assignment__actions">
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    pTooltip="Listeden çıkar"
+                    tooltipPosition="top"
+                    aria-label="Listeden çıkar"
+                    *appHasAction="'DELETE'; operation: 'COURSE_INSTRUCTOR'"
+                    [disabled]="store.saving()"
+                    (click)="removeInstructor(instructor)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </li>
+            } @empty {
+              <li class="assignments__empty">Henüz kimse işaretlenmedi.</li>
+            }
+          </ul>
+
+          <p class="detail__note">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Bu bir <strong>atama değil</strong>: ders açılışında hoca seçerken aday listesini başa
+            alır. Liste boşsa açılışta yine tüm hocalar görünür.
+          </p>
+        </section>
+
+        <footer class="detail__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasAction="'UPDATE'; operation: 'COURSE'"
+            [disabled]="store.saving()"
+            (click)="openEdit()"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i> Düzenle
+          </button>
+
+          <button
+            type="button"
+            class="btn btn--danger"
+            *appHasAction="'DELETE'; operation: 'COURSE'"
+            [disabled]="store.saving() || !!deleteBlockedReason()"
+            [pTooltip]="deleteBlockedReason() ?? ''"
+            [tooltipDisabled]="!deleteBlockedReason()"
+            tooltipPosition="top"
+            (click)="confirmDelete()"
+          >
+            <i class="pi pi-trash" aria-hidden="true"></i> Sil
+          </button>
+        </footer>
+
+        @if (deleteBlockedReason(); as reason) {
+          <p class="detail__note detail__note--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i> {{ reason }}
+          </p>
+        }
+      } @else {
+        <div class="state state--inline">
+          <i class="pi pi-arrow-left state__icon" aria-hidden="true"></i>
+          <h3 class="state__title">Ders seçilmedi</h3>
+          <p class="state__text">
+            Müfredat bağlarını ve verebilecek hocaları görmek için soldan bir ders seçin.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<app-course-form-dialog
+  [(visible)]="formOpen"
+  [course]="editing() ? detail() : null"
+  [saving]="store.saving()"
+  (save)="onFormSave($event)"
+/>
+
+<app-course-department-dialog
+  [(visible)]="departmentDialogOpen"
+  [link]="linkInDialog()"
+  [departmentOptions]="store.departmentOptions()"
+  [saving]="store.saving()"
+  (save)="onDepartmentSave($event)"
+/>
+
+<app-picker-dialog
+  [(visible)]="instructorPickerOpen"
+  heading="Verebilecek Hocalar"
+  description="Seçilen öğretim elemanları bu dersin yeterlilik havuzuna eklenir. Ders açılışında aday listesinde başa gelirler."
+  [items]="instructorCandidates()"
+  [(search)]="instructorSearch"
+  searchPlaceholder="Ad veya sicil…"
+  confirmLabel="Ekle"
+  emptyText="Eklenebilecek öğretim elemanı yok."
+  [saving]="store.saving()"
+  (confirm)="onInstructorsPicked($event)"
+/>
+
+<p-confirmdialog />

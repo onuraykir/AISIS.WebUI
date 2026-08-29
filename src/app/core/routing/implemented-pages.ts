@@ -13,6 +13,15 @@ import { Type } from '@angular/core';
 export const IMPLEMENTED_PAGES: Record<string, () => Promise<Type<unknown>>> = {
   '/tanim/bolum': () =>
     import('@features/admin/departments/department-tree-page').then((m) => m.DepartmentTreePage),
+  '/tanim/ders': () => import('@features/admin/courses/courses-page').then((m) => m.CoursesPage),
+  '/tanim/ders-acilisi': () =>
+    import('@features/admin/offerings/offerings-page').then((m) => m.OfferingsPage),
+  '/tanim/etkinlik': () =>
+    import('@features/admin/activity-definitions/activity-definitions-page').then(
+      (m) => m.ActivityDefinitionsPage,
+    ),
+  '/tanim/donem': () =>
+    import('@features/admin/semesters/semesters-page').then((m) => m.SemestersPage),
   '/tanim/kisi': () => import('@features/admin/people/people-page').then((m) => m.PeoplePage),
   '/tanim/ogrenci': () =>
     import('@features/admin/students/students-page').then((m) => m.StudentsPage),
