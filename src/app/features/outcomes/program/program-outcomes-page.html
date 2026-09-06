@@ -1,0 +1,148 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <h1 class="page__title">Program Çıktıları</h1>
+      <p class="page__lead">
+        Mezunun yeterlilikleri. Ders çıktısıyla karıştırılmamalı — o bir açılışın
+        kazanımı, bu programın tamamının hedefi. <strong>Sürümlenir:</strong>
+        akreditasyon döngüsünde metinler değişir, geçmiş raporlar eski sürüme dayanır.
+      </p>
+    </div>
+
+    <div class="page__actions">
+      <button type="button" class="btn btn--ghost" [disabled]="store.loading()" (click)="reload()">
+        <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i> Yenile
+      </button>
+
+      <button
+        type="button"
+        class="btn btn--primary"
+        *appHasAction="'CREATE'; operation: 'OUTCOME'"
+        (click)="openCreate()"
+      >
+        <i class="pi pi-plus" aria-hidden="true"></i> Program Çıktısı
+      </button>
+    </div>
+  </header>
+
+  <div class="filter">
+    <input
+      type="search"
+      class="filter__input"
+      [ngModel]="store.search()"
+      (ngModelChange)="store.search.set($event)"
+      placeholder="Kod veya açıklamada ara…"
+    />
+    <span class="filter__count">
+      {{ store.filtered().length }} çıktı · {{ store.activeCount() }} yürürlükte
+    </span>
+  </div>
+
+  @if (store.error(); as error) {
+    <p-message severity="error" [text]="error" styleClass="page__message" />
+  }
+
+  @if (store.feedback(); as feedback) {
+    <p-message [severity]="feedback.severity" [text]="feedback.text" styleClass="page__message" />
+  }
+
+  @if (store.loading()) {
+    <p-skeleton height="12rem" />
+  } @else {
+    <ul class="list">
+      @for (outcome of store.filtered(); track outcome.id) {
+        <li
+          class="row"
+          [class.row--selected]="store.selectedId() === outcome.id"
+          [class.row--passive]="!outcome.isActive"
+        >
+          <button type="button" class="row__main" (click)="select(outcome)">
+            <span class="row__head">
+              <span class="row__code">{{ outcome.code }}</span>
+              <span class="row__version">{{ outcome.version }}</span>
+              @if (!outcome.isActive) {
+                <span class="row__badge">yürürlükte değil</span>
+              }
+            </span>
+            <span class="row__desc">{{ outcome.description }}</span>
+          </button>
+
+          <span class="row__ops">
+            <button
+              type="button"
+              class="row__action"
+              *appHasAction="'UPDATE'; operation: 'OUTCOME'"
+              pTooltip="Düzenle"
+              tooltipPosition="top"
+              aria-label="Düzenle"
+              [disabled]="store.saving()"
+              (click)="openEdit(outcome)"
+            >
+              <i class="pi pi-pencil"></i>
+            </button>
+
+            <button
+              type="button"
+              class="row__action row__action--danger"
+              *appHasAction="'DELETE'; operation: 'OUTCOME'"
+              pTooltip="Sil"
+              tooltipPosition="top"
+              aria-label="Sil"
+              [disabled]="store.saving()"
+              (click)="confirmDelete(outcome)"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </span>
+        </li>
+      } @empty {
+        <li class="empty">
+          Henüz program çıktısı yok. Çıktı hesabının son adımı bunlara dayanır —
+          eklemeden hesap program çıktısı üretemez.
+        </li>
+      }
+    </ul>
+
+    <!--
+      EŞİK DURUMU BURADA GÖSTERİLİYOR çünkü eksikliği hesabı DURDURUYOR
+      (PROGRAM_OUTCOME_THRESHOLD_MISSING). Eşik ekranına gidip tek tek bakmak
+      gerekmemeli.
+    -->
+    @if (store.selected(); as selected) {
+      <aside class="detail">
+        <h2 class="detail__title">{{ selected.code }} — eşik durumu</h2>
+
+        @if (store.thresholdsLoading()) {
+          <p-skeleton height="3rem" />
+        } @else if (store.activeThreshold(); as threshold) {
+          <p class="detail__ok">
+            <i class="pi pi-check-circle" aria-hidden="true"></i>
+            Yürürlükteki eşik: geçme <strong>{{ threshold.minValue }}</strong> ·
+            hedef {{ threshold.targetValue }}
+          </p>
+          <p class="detail__note">
+            Hesap <strong>geçme eşiğini</strong> okuyor; hedef değer yalnızca raporlamada.
+          </p>
+        } @else {
+          <p class="detail__warn">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            Yürürlükte eşik <strong>yok</strong>. Bu çıktı için başarılı/başarısız kararı
+            verilemez ve çıktı hesabı <strong>koşmaz</strong>.
+          </p>
+          <p class="detail__note">
+            Eşik Değerler ekranından bir eşik tanımlayıp yürürlüğe alın.
+          </p>
+        }
+      </aside>
+    }
+  }
+</section>
+
+<app-program-outcome-dialog
+  [(visible)]="dialogOpen"
+  [outcome]="outcomeInDialog()"
+  [saving]="store.saving()"
+  (save)="onSave($event)"
+/>
+
+<p-confirmdialog />

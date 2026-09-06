@@ -1,0 +1,200 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <h1 class="page__title">Öğrenci Notları</h1>
+      <p class="page__lead">
+        Notların elle girildiği grid. Satırlar <strong>sınıf listesinden</strong> gelir;
+        notu olmayan öğrenci de görünür. <strong>Yapı burada değiştirilemez</strong> —
+        etkinlik ve soru eklemek ders açılışı ekranının işi.
+      </p>
+    </div>
+
+    <div class="page__actions">
+      <button
+        type="button"
+        class="btn btn--ghost"
+        [disabled]="store.saving() || store.dirtyCount() === 0"
+        (click)="preview()"
+      >
+        <i class="pi pi-eye" aria-hidden="true"></i> Ne değişecek?
+      </button>
+
+      <button
+        type="button"
+        class="btn btn--primary"
+        *appHasAction="'UPDATE'; operation: 'SCORE'"
+        [disabled]="!!saveBlockedReason() || store.saving()"
+        [pTooltip]="saveBlockedReason() ?? 'Notları kaydet'"
+        tooltipPosition="top"
+        (click)="save()"
+      >
+        @if (store.saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        Kaydet
+        @if (store.dirtyCount() > 0) {
+          <span class="badge">{{ store.dirtyCount() }}</span>
+        }
+      </button>
+    </div>
+  </header>
+
+  <div class="picker">
+    <label class="picker__field">
+      <span class="picker__label">Dönem</span>
+      <p-select
+        [options]="context.semesterOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="context.semesterId()"
+        (ngModelChange)="onSemesterChange($event)"
+        placeholder="Dönem seçin"
+        appendTo="body"
+      />
+    </label>
+
+    <label class="picker__field picker__field--wide">
+      <span class="picker__label">Ders açılışı</span>
+      <p-select
+        [options]="context.offeringOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="context.offeringId()"
+        (ngModelChange)="onOfferingChange($event)"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Açılış seçin"
+        appendTo="body"
+        [disabled]="context.offerings().length === 0"
+      />
+    </label>
+  </div>
+
+  @if (context.error(); as error) {
+    <p-message severity="error" [text]="error" styleClass="page__message" />
+  }
+  @if (store.feedback(); as feedback) {
+    <p-message [severity]="feedback.severity" [text]="feedback.text" styleClass="page__message" />
+  }
+
+  @if (store.result(); as result) {
+    <p-message
+      severity="success"
+      [text]="
+        result.createdScoreCount +
+        ' yeni puan, ' +
+        result.updatedScoreCount +
+        ' güncelleme, ' +
+        result.deletedScoreCount +
+        ' silme kaydedildi.'
+      "
+      styleClass="page__message"
+    />
+  }
+
+  <!-- Önizleme: kaydetmeden önce ne olacağını söyler. -->
+  @if (store.comparison(); as comparison) {
+    <div class="panel">
+      <h3 class="panel__title">Kaydedilirse</h3>
+      <div class="cards">
+        <div class="card">
+          <span class="card__value">{{ comparison.summary.newScoreCount }}</span>
+          <span class="card__label">yeni puan</span>
+        </div>
+        <div class="card">
+          <span class="card__value">{{ comparison.summary.modifiedScoreCount }}</span>
+          <span class="card__label">güncellenecek</span>
+        </div>
+        <div class="card" [class.card--warn]="comparison.summary.deletedScoreCount > 0">
+          <span class="card__value">{{ comparison.summary.deletedScoreCount }}</span>
+          <span class="card__label">silinecek</span>
+        </div>
+      </div>
+
+      @if (comparison.blockingIssues.length > 0) {
+        <ul class="panel__list panel__list--bad">
+          @for (issue of comparison.blockingIssues; track $index) {
+            <li>{{ issue.message }}</li>
+          }
+        </ul>
+      }
+    </div>
+  }
+
+  @if (context.offeringId() === null) {
+    <p class="hint">
+      <i class="pi pi-arrow-up" aria-hidden="true"></i>
+      Not girmek için yukarıdan bir dönem ve ders açılışı seçin.
+    </p>
+  } @else if (store.loading()) {
+    <p-skeleton height="16rem" />
+  } @else if (!store.hasStructure()) {
+    <p class="hint">
+      <i class="pi pi-info-circle" aria-hidden="true"></i>
+      Bu açılışta henüz değerlendirme etkinliği tanımlı değil. Not girilebilmesi için
+      önce etkinlik ve sorularının tanımlanması gerekiyor.
+    </p>
+  } @else {
+    <div class="tbl-wrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th class="grid__sticky">Öğrenci</th>
+            @for (column of store.columns(); track column.itemId) {
+              <th>
+                <span class="grid__item">{{ column.itemName }}</span>
+                <span class="grid__activity">
+                  {{ column.activityName }} · {{ column.maxPoint }}p
+                </span>
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (student of store.students(); track student.id) {
+            <tr>
+              <th class="grid__sticky">
+                <span class="grid__number">{{ student.studentNumber }}</span>
+                <span class="grid__name">{{ student.fullName }}</span>
+              </th>
+              @for (column of store.columns(); track column.itemId) {
+                <td>
+                  <input
+                    type="number"
+                    class="grid__input"
+                    [class.grid__input--dirty]="store.isDirty(student.id, column.itemId)"
+                    [class.grid__input--over]="exceedsMax(student.id, column.itemId, column.maxPoint)"
+                    min="0"
+                    [max]="column.maxPoint"
+                    step="0.5"
+                    [value]="store.valueOf(student.id, column.itemId)"
+                    [pTooltip]="
+                      exceedsMax(student.id, column.itemId, column.maxPoint)
+                        ? 'Tam puan ' + column.maxPoint + '. Puan tam puanı aşamaz.'
+                        : ''
+                    "
+                    [tooltipDisabled]="!exceedsMax(student.id, column.itemId, column.maxPoint)"
+                    tooltipPosition="top"
+                    (change)="onScoreInput(student.id, column.itemId, $any($event.target).value)"
+                  />
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="store.columns().length + 1" class="grid__empty">
+                Bu açılışın sınıf listesi boş. Öğrenciler ders açılışı ekranından eklenir.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      Boş bırakılan hücre <strong>kayıt yazmaz</strong>; veritabanında karşılığı varsa
+      siler. Sıfır girmek ile boş bırakmak aynı şey değildir — sıfır bir nottur, boş
+      hücre "girilmedi" demektir.
+    </p>
+  }
+</section>

@@ -1,0 +1,435 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <h1 class="page__title">Not Yükleme</h1>
+      <p class="page__lead">
+        Excel'den not yükleme <strong>üç onaydan</strong> geçer: önce sınıf listesiyle
+        uzlaştırma, sonra etkinlik ve soru yapısı, en son notların kendisi. Her adım
+        sunucuda yeniden hesaplanır — ekranda gördüğünüz, kaydedilecek olanın kendisidir.
+      </p>
+    </div>
+  </header>
+
+  <div class="picker">
+    <label class="picker__field">
+      <span class="picker__label">Dönem</span>
+      <p-select
+        [options]="context.semesterOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="context.semesterId()"
+        (ngModelChange)="onSemesterChange($event)"
+        placeholder="Dönem seçin"
+        appendTo="body"
+      />
+    </label>
+
+    <label class="picker__field picker__field--wide">
+      <span class="picker__label">Ders açılışı</span>
+      <p-select
+        [options]="context.offeringOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="context.offeringId()"
+        (ngModelChange)="onOfferingChange($event)"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Açılış seçin"
+        appendTo="body"
+        [disabled]="context.offerings().length === 0"
+      />
+    </label>
+  </div>
+
+  @if (context.error(); as error) {
+    <p-message severity="error" [text]="error" styleClass="page__message" />
+  }
+  @if (store.feedback(); as feedback) {
+    <p-message [severity]="feedback.severity" [text]="feedback.text" styleClass="page__message" />
+  }
+
+  <!-- ── Adım şeridi ── -->
+  @if (showSteps()) {
+    <ol class="steps">
+      @for (step of steps; track step.id) {
+        <li
+          class="steps__item"
+          [class.steps__item--active]="store.stage() === step.id"
+          [class.steps__item--done]="currentStepNo() > step.no"
+        >
+          <span class="steps__no">{{ step.no }}</span>
+          <span class="steps__label">{{ step.label }}</span>
+        </li>
+      }
+    </ol>
+  }
+
+  <!-- ════════════ AŞAMA 0 · DOSYA ════════════ -->
+  @if (store.stage() === 'file') {
+    @if (context.offeringId() === null) {
+      <p class="hint">
+        <i class="pi pi-arrow-up" aria-hidden="true"></i>
+        Not yüklemek için önce bir dönem ve ders açılışı seçin.
+      </p>
+    } @else {
+      <div class="upload" *appHasAction="'IMPORT'; operation: 'SCORE_IMPORT'">
+        <i class="pi pi-file-excel upload__icon" aria-hidden="true"></i>
+        <p class="upload__title">Not Excel'ini seçin</p>
+        <p class="upload__note">
+          1. satır etkinlik, 2. satır soru adları, A sütunu öğrenci numarası.
+          <strong>Son satır tam puan satırıdır:</strong> A sütununa
+          <code>MAXPOINT</code> yazın, her sorunun sütununa tam puanını.
+        </p>
+
+        <label class="btn btn--primary upload__button">
+          <i class="pi pi-upload" aria-hidden="true"></i> Dosya seç
+          <input type="file" accept=".xlsx,.xlsm" hidden (change)="onFileSelected($event)" />
+        </label>
+
+        @if (store.busy()) {
+          <p class="upload__busy"><i class="pi pi-spin pi-spinner"></i> Dosya okunuyor…</p>
+        }
+      </div>
+    }
+  }
+
+  <!-- ════════════ AŞAMA 1 · ÖĞRENCİLER ════════════ -->
+  @if (store.stage() === 'students') {
+    <div class="stage">
+      <header class="stage__head">
+        <h2 class="stage__title">1 · Sınıf listesiyle uzlaştırma</h2>
+        <p class="stage__lead">
+          <code>{{ store.fileName() }}</code> dosyası derse kayıtlı öğrencilerle
+          karşılaştırıldı. Bu adımda karar yok; olan biteni onaylıyorsunuz.
+        </p>
+      </header>
+
+      @if (store.blockingIssues().length > 0) {
+        <div class="panel panel--bad">
+          <h3 class="panel__title">Dosya okunamadı</h3>
+          <ul class="panel__list">
+            @for (issue of store.blockingIssues(); track $index) {
+              <li>{{ issue.message }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="cards">
+        <div class="card">
+          <span class="card__value">{{ store.matchedStudents().length }}</span>
+          <span class="card__label">eşleşen öğrenci</span>
+        </div>
+        <div class="card" [class.card--warn]="store.notEnrolled().length > 0">
+          <span class="card__value">{{ store.notEnrolled().length }}</span>
+          <span class="card__label">alınmadı</span>
+        </div>
+        <div class="card" [class.card--warn]="store.missingStudents().length > 0">
+          <span class="card__value">{{ store.missingStudents().length }}</span>
+          <span class="card__label">boş eklendi</span>
+        </div>
+      </div>
+
+      @if (store.notEnrolled().length > 0) {
+        <div class="panel panel--warn">
+          <h3 class="panel__title">Dosyada var, derse kayıtlı değil — alınmadı</h3>
+          <p class="panel__note">
+            Bu satırlar işlenmedi. Öğrenci gerçekten derse kayıtlıysa önce
+            <strong>ders açılışı</strong> ekranından sınıf listesine ekleyin.
+          </p>
+          <ul class="panel__list">
+            @for (warning of store.notEnrolled(); track $index) {
+              <li><code>{{ warning.identifier }}</code></li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (store.missingStudents().length > 0) {
+        <div class="panel panel--warn">
+          <h3 class="panel__title">Derse kayıtlı, dosyada yok — boş puanlarla eklendi</h3>
+          <p class="panel__note">
+            Gridde satırları var ama hücreleri boş. Boş hücre kayıt yazmaz.
+          </p>
+          <ul class="panel__list">
+            @for (student of store.missingStudents(); track student.existingStudentId) {
+              <li>
+                <code>{{ student.studentNumber }}</code>
+                <span class="muted">{{ student.fullName }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <footer class="stage__foot">
+        <button type="button" class="btn btn--ghost" (click)="startOver()">Vazgeç</button>
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="store.busy() || store.blockingIssues().length > 0"
+          (click)="approveStudents()"
+        >
+          Onayla ve devam et <i class="pi pi-arrow-right" aria-hidden="true"></i>
+        </button>
+      </footer>
+    </div>
+  }
+
+  <!-- ════════════ AŞAMA 2 · YAPI ════════════ -->
+  @if (store.stage() === 'structure') {
+    <div class="stage">
+      <header class="stage__head">
+        <h2 class="stage__title">2 · Etkinlik ve sorular</h2>
+        <p class="stage__lead">
+          Bu adımda <strong>karar veriyorsunuz</strong>: açılışta olmayan etkinlik
+          eklenecek mi, tam puanı bilinmeyen sorular ne olacak.
+        </p>
+      </header>
+
+      @if (store.proposedActivities().length > 0) {
+        <div class="panel panel--warn">
+          <h3 class="panel__title">Dosyada var, açılışta yok</h3>
+          <p class="panel__note">
+            Dosya bunları <strong>önerir</strong>, açan sizsiniz. Eklemek için türünü
+            seçin; eklemek istemiyorsanız dışarıda bırakın — o etkinliğin soruları ve
+            puanları hiç yüklenmez.
+          </p>
+
+          @for (activity of store.proposedActivities(); track activity.activityName) {
+            <div class="decision" [class.decision--off]="isExcluded(activity.activityName)">
+              <div class="decision__name">
+                <code>{{ activity.activityName }}</code>
+                <span class="muted">{{ activity.items.length }} soru</span>
+              </div>
+
+              <label class="decision__field">
+                <span class="picker__label">Etkinlik türü</span>
+                <p-select
+                  [options]="store.definitionOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="typeOf(activity.activityName)"
+                  (ngModelChange)="onTypeChange(activity.activityName, $event)"
+                  placeholder="Vize, Final, Ödev…"
+                  appendTo="body"
+                  [disabled]="isExcluded(activity.activityName)"
+                />
+              </label>
+
+              <label class="decision__check">
+                <input
+                  type="checkbox"
+                  [checked]="isExcluded(activity.activityName)"
+                  (change)="toggleExcluded(activity.activityName, $any($event.target).checked)"
+                />
+                Yükleme dışında bırak
+              </label>
+            </div>
+          }
+        </div>
+      }
+
+      @if (store.missingMaxPoints().length > 0) {
+        <div class="panel panel--bad">
+          <h3 class="panel__title">Tam puanı olmayan sorular</h3>
+          <p class="panel__note">
+            Çıktı hesabının paydası soruların tam puanlarıdır; sıfır tam puan hesabı
+            durdurur. Dosyadaki <code>MAXPOINT</code> satırına yazabilir ya da buradan
+            doldurabilirsiniz. <strong>Doldurulmadan not girişine geçilemez.</strong>
+          </p>
+
+          @for (issue of store.missingMaxPoints(); track issue.identifier) {
+            <div class="fill">
+              <code class="fill__name">{{ issue.identifier }}</code>
+              <input
+                type="number"
+                class="fill__input"
+                min="0"
+                step="0.5"
+                placeholder="Tam puan"
+                (change)="onMissingMaxPointInput(issue.identifier, $any($event.target).value)"
+              />
+            </div>
+          }
+        </div>
+      }
+
+      @if (store.knownActivities().length > 0) {
+        <div class="panel">
+          <h3 class="panel__title">Açılışta tanımlı etkinlikler</h3>
+          <ul class="panel__list">
+            @for (activity of store.knownActivities(); track activity.activityName) {
+              <li>
+                <code>{{ activity.activityName }}</code>
+                <span class="muted">{{ activity.items.length }} soru</span>
+                @if (activity.state === ChangeState.MissingInFile) {
+                  <span class="tag">dosyada yok — dokunulmadı</span>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <footer class="stage__foot">
+        <button type="button" class="btn btn--ghost" (click)="back('students')">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i> Geri
+        </button>
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="store.busy()"
+          [pTooltip]="
+            store.canLeaveStructure()
+              ? 'Not girişine geç'
+              : 'Önce tam puanları ve etkinlik türlerini tamamlayın'
+          "
+          tooltipPosition="top"
+          (click)="approveStructure()"
+        >
+          @if (store.busy()) {
+            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          }
+          Onayla ve devam et <i class="pi pi-arrow-right" aria-hidden="true"></i>
+        </button>
+      </footer>
+    </div>
+  }
+
+  <!-- ════════════ AŞAMA 3 · NOTLAR ════════════ -->
+  @if (store.stage() === 'grades') {
+    <div class="stage">
+      <header class="stage__head">
+        <h2 class="stage__title">3 · Notlar</h2>
+        <p class="stage__lead">
+          Son adım. Hücreleri düzeltebilirsiniz; <strong>boş bırakılan hücre kayıt
+          yazmaz</strong> ve varsa mevcut puanı siler.
+        </p>
+      </header>
+
+      @if (emptyCellNotice(); as notice) {
+        <p-message severity="warn" [text]="notice" styleClass="page__message" />
+      }
+
+      <div class="tbl-wrap">
+        <table class="grid">
+          <thead>
+            <tr>
+              <th class="grid__sticky">Öğrenci</th>
+              @for (column of store.gridColumns(); track column.key) {
+                <th>
+                  <span class="grid__item">{{ column.itemName }}</span>
+                  <span class="grid__activity">{{ column.activityName }} · {{ column.maxPoint }}p</span>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (student of store.comparison()?.students ?? []; track student.existingStudentId) {
+              <tr [class.grid__row--empty]="student.state === ChangeState.MissingInFile">
+                <th class="grid__sticky">
+                  <span class="grid__number">{{ student.studentNumber }}</span>
+                  <span class="grid__name">{{ student.fullName }}</span>
+                </th>
+                @for (column of store.gridColumns(); track column.key) {
+                  <td>
+                    <input
+                      type="number"
+                      class="grid__input"
+                      [class.grid__input--over]="
+                        exceedsMax(student.studentNumber, column.key, column.maxPoint)
+                      "
+                      min="0"
+                      [max]="column.maxPoint"
+                      step="0.5"
+                      [value]="store.scoreOf(student.studentNumber, column.key)"
+                      [pTooltip]="
+                        exceedsMax(student.studentNumber, column.key, column.maxPoint)
+                          ? 'Tam puan ' + column.maxPoint + '. Puan tam puanı aşamaz.'
+                          : ''
+                      "
+                      [tooltipDisabled]="
+                        !exceedsMax(student.studentNumber, column.key, column.maxPoint)
+                      "
+                      tooltipPosition="top"
+                      (change)="
+                        onScoreInput(student.studentNumber, column.key, $any($event.target).value)
+                      "
+                    />
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="stage__foot">
+        <button type="button" class="btn btn--ghost" (click)="back('structure')">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i> Geri
+        </button>
+        <button
+          type="button"
+          class="btn btn--primary"
+          *appHasAction="'CREATE'; operation: 'SCORE_IMPORT'"
+          [disabled]="store.busy()"
+          (click)="confirm()"
+        >
+          @if (store.busy()) {
+            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          }
+          Kaydet
+        </button>
+      </footer>
+    </div>
+  }
+
+  <!-- ════════════ BİTTİ ════════════ -->
+  @if (store.stage() === 'done') {
+    @if (store.result(); as result) {
+      <div class="stage">
+        <div class="panel panel--ok">
+          <h3 class="panel__title">Kayıt tamamlandı</h3>
+          <div class="cards">
+            <div class="card">
+              <span class="card__value">{{ result.createdScoreCount }}</span>
+              <span class="card__label">yeni puan</span>
+            </div>
+            <div class="card">
+              <span class="card__value">{{ result.updatedScoreCount }}</span>
+              <span class="card__label">güncellendi</span>
+            </div>
+            <div class="card">
+              <span class="card__value">{{ result.deletedScoreCount }}</span>
+              <span class="card__label">silindi</span>
+            </div>
+            @if (result.createdActivityCount > 0) {
+              <div class="card">
+                <span class="card__value">{{ result.createdActivityCount }}</span>
+                <span class="card__label">etkinlik açıldı</span>
+              </div>
+            }
+            @if (result.createdItemCount > 0) {
+              <div class="card">
+                <span class="card__value">{{ result.createdItemCount }}</span>
+                <span class="card__label">soru açıldı</span>
+              </div>
+            }
+          </div>
+
+          <p class="panel__note">
+            Sistem çıktı hesabına hazır. <strong>Kapanışa hazır olduğu anlamına gelmez:</strong>
+            puanı girilmemiş öğrenci hesapta 0 sayılır ve ders bu hâlde kapatılamaz.
+          </p>
+        </div>
+
+        <footer class="stage__foot">
+          <button type="button" class="btn btn--primary" (click)="startOver()">
+            Yeni yükleme
+          </button>
+        </footer>
+      </div>
+    }
+  }
+</section>

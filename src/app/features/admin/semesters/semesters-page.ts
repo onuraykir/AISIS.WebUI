@@ -25,6 +25,7 @@ import {
   SEMESTER_STATUS_HINTS,
   SEMESTER_STATUS_LABELS,
   SEMESTER_STATUS_OPTIONS,
+  SemesterClosure,
   SemesterListItem,
   SemesterStatus,
 } from './data-access/semester.models';
@@ -68,6 +69,9 @@ export class SemestersPage implements OnInit {
   protected readonly editing = signal(false);
 
   protected readonly detail = this.store.detail;
+
+  /** K3 raporu: kapatılabilir mi, hangi açılışlar açık kaldı. */
+  protected readonly closure = signal<SemesterClosure | null>(null);
 
   protected readonly statusFilterOptions = [
     { value: null as number | null, label: 'Tüm durumlar' },
@@ -135,7 +139,8 @@ export class SemestersPage implements OnInit {
   }
 
   protected select(item: SemesterListItem): void {
-    void this.store.select(item.id);
+    this.closure.set(null);
+    void this.store.select(item.id).then(() => this.loadClosure());
   }
 
   protected statusLabel(status: number): string {
@@ -188,6 +193,53 @@ export class SemestersPage implements OnInit {
 
   protected async makeCurrent(): Promise<void> {
     await this.store.setCurrent(this.detail()!.id);
+  }
+
+  // ── Dönem kapanışı ──
+  //
+  // K3 raporu künye AÇILDIĞINDA çekiliyor: "kapatabilir miyim" sorusunun cevabı
+  // düğmeye basmadan önce görünmeli, hangi açılışların açık kaldığı dahil.
+
+  protected async loadClosure(): Promise<void> {
+    const semester = this.detail();
+
+    if (!semester || semester.status === SemesterStatus.Closed) {
+      this.closure.set(null);
+      return;
+    }
+
+    this.closure.set(await this.store.closurePreview(semester.id));
+  }
+
+  protected confirmClose(): void {
+    const semester = this.detail();
+    const report = this.closure();
+    if (!semester || !report) return;
+
+    this.confirmation.confirm({
+      header: 'Dönemi kapat',
+      message:
+        `"${semester.name}" kapatılacak ve öğrencilerin dersler ötesi program çıktısı ` +
+        'sonuçları yeniden hesaplanacak. Kapalı dönem salt okunur olur.',
+      icon: 'pi pi-lock',
+      acceptLabel: 'Kapat',
+      rejectLabel: 'Vazgeç',
+      acceptButtonStyleClass: 'p-button-sm',
+      rejectButtonStyleClass: 'p-button-text p-button-sm',
+      accept: () => void this.store.close(semester.id).then(() => this.loadClosure()),
+    });
+  }
+
+  /** Kapatma neden engelli? Boşsa serbest. */
+  protected closeBlockedReason(): string | null {
+    const report = this.closure();
+
+    if (!report) return 'Kapanış durumu yükleniyor.';
+    if (report.isClosed) return 'Dönem zaten kapalı.';
+
+    return report.canClose
+      ? null
+      : `${report.openOfferings.length} ders açılışı hâlâ açık.`;
   }
 
   protected confirmDelete(): void {

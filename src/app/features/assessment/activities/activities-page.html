@@ -1,0 +1,193 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <h1 class="page__title">Değerlendirme Etkinlikleri</h1>
+      <p class="page__lead">
+        Sınavlarınızın <strong>soruları ve tam puanları</strong>. Etkinliklerin kendisi
+        dönem başında ders açılışında tanımlanır; sorular sınavı yazdıkça buradan eklenir.
+        <strong>Tam puan zorunludur:</strong> çıktı hesabının paydası soruların tam
+        puanları toplamıdır.
+      </p>
+    </div>
+  </header>
+
+  <div class="picker">
+    <label class="picker__field">
+      <span class="picker__label">Dönem</span>
+      <p-select
+        [options]="context.semesterOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="context.semesterId()"
+        (ngModelChange)="onSemesterChange($event)"
+        placeholder="Dönem seçin"
+        appendTo="body"
+      />
+    </label>
+
+    <label class="picker__field picker__field--wide">
+      <span class="picker__label">Ders açılışı</span>
+      <p-select
+        [options]="context.offeringOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="context.offeringId()"
+        (ngModelChange)="onOfferingChange($event)"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Açılış seçin"
+        appendTo="body"
+        [disabled]="context.offerings().length === 0"
+      />
+    </label>
+  </div>
+
+  @if (context.error(); as error) {
+    <p-message severity="error" [text]="error" styleClass="page__message" />
+  }
+  @if (store.feedback(); as feedback) {
+    <p-message [severity]="feedback.severity" [text]="feedback.text" styleClass="page__message" />
+  }
+
+  @if (context.offeringId() === null) {
+    <p class="hint">
+      <i class="pi pi-arrow-up" aria-hidden="true"></i>
+      Soruları görmek ve eklemek için yukarıdan bir dönem ve ders açılışı seçin.
+    </p>
+  } @else if (store.loading()) {
+    <p-skeleton height="14rem" />
+  } @else {
+    <!--
+      HESABI DURDURAN HÂL, HESAP KOŞMADAN GÖSTERİLİYOR.
+      Tam puanı sıfır olan soru, çıktı hesabını ITEM_TOTAL_ZERO ile durdurur; bu
+      eskiden günler sonra, çıktı hesabı ekranında fark ediliyordu.
+    -->
+    @if (store.itemsWithoutMaxPoint().length > 0) {
+      <div class="panel panel--bad">
+        <h3 class="panel__title">Tam puanı girilmemiş sorular</h3>
+        <p class="panel__note">
+          Bu sorular çıktı hesabını durdurur. Her birine sıfırdan büyük bir tam puan girin.
+        </p>
+        <ul class="panel__list">
+          @for (miss of store.itemsWithoutMaxPoint(); track miss.activityName + miss.itemName) {
+            <li><code>{{ miss.activityName }} / {{ miss.itemName }}</code></li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (store.activitiesWithoutItems().length > 0) {
+      <div class="panel panel--warn">
+        <h3 class="panel__title">Henüz sorusu olmayan etkinlikler</h3>
+        <p class="panel__note">
+          Sınav henüz yazılmamış olabilir; bu bir hata değil. Ama soruları girilmeden o
+          etkinlik çıktı hesabına giremez.
+        </p>
+        <ul class="panel__list">
+          @for (activity of store.activitiesWithoutItems(); track activity.id) {
+            <li><code>{{ activity.name }}</code></li>
+          }
+        </ul>
+      </div>
+    }
+
+    <div class="summary">
+      {{ store.activities().length }} etkinlik · {{ store.totalItemCount() }} soru
+    </div>
+
+    <div class="activities">
+      @for (activity of store.activities(); track activity.id) {
+        <article class="activity">
+          <header class="activity__head">
+            <div class="activity__title">
+              <span class="activity__name">{{ activity.name }}</span>
+              <span class="activity__type">{{ activity.activityDefinitionName }}</span>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'CREATE'; operation: 'OFFERING_ACTIVITY_ITEM'"
+              [disabled]="store.saving()"
+              (click)="openItemCreate(activity)"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i> Soru ekle
+            </button>
+          </header>
+
+          @if (activity.items.length === 0) {
+            <p class="activity__empty">
+              Bu etkinliğin sorusu yok. Sınavı yazdıkça soruları ekleyin.
+            </p>
+          } @else {
+            <ul class="items">
+              @for (item of activity.items; track item.id) {
+                <li class="item" [class.item--warn]="item.maxPoint <= 0">
+                  <span class="item__seq">{{ item.sequenceNo }}</span>
+                  <span class="item__name">{{ item.name }}</span>
+
+                  <span class="item__points">
+                    @if (item.maxPoint > 0) {
+                      {{ item.maxPoint }} puan
+                    } @else {
+                      <span class="item__missing">tam puan yok</span>
+                    }
+                  </span>
+
+                  @if (item.scoreCount > 0) {
+                    <span class="item__scores">{{ item.scoreCount }} not</span>
+                  }
+
+                  <span class="item__ops">
+                    <button
+                      type="button"
+                      class="row__action"
+                      *appHasAction="'UPDATE'; operation: 'OFFERING_ACTIVITY_ITEM'"
+                      pTooltip="Düzenle"
+                      tooltipPosition="top"
+                      aria-label="Düzenle"
+                      [disabled]="store.saving()"
+                      (click)="openItemEdit(activity, item)"
+                    >
+                      <i class="pi pi-pencil"></i>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="row__action row__action--danger"
+                      *appHasAction="'DELETE'; operation: 'OFFERING_ACTIVITY_ITEM'"
+                      [pTooltip]="itemDeleteBlockedReason(item) ?? 'Sil'"
+                      tooltipPosition="top"
+                      aria-label="Sil"
+                      [disabled]="store.saving() || !!itemDeleteBlockedReason(item)"
+                      (click)="confirmRemoveItem(item)"
+                    >
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+      } @empty {
+        <p class="hint">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Bu açılışta henüz değerlendirme etkinliği tanımlı değil. Etkinlikler dönem
+          başında <strong>ders açılışı</strong> ekranından girilir.
+        </p>
+      }
+    </div>
+  }
+</section>
+
+<app-offering-activity-item-dialog
+  [(visible)]="itemDialogOpen"
+  [item]="itemInDialog()"
+  [activityName]="activityOfDialog()?.name ?? ''"
+  [usedNames]="usedItemNames()"
+  [saving]="store.saving()"
+  (save)="onItemSave($event)"
+/>
+
+<p-confirmdialog />

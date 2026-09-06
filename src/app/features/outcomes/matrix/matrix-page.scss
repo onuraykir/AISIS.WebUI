@@ -1,0 +1,404 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 40px;
+  align-items: flex-start;
+}
+
+.page__head {
+  width: 100%;
+}
+
+.page__title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.page__lead {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--p-text-muted-color);
+}
+
+.page__message {
+  display: block;
+  width: 100%;
+}
+
+/* ── Bağlam ── */
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+.picker__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 200px;
+}
+
+.picker__field--wide {
+  flex: 1 1 320px;
+}
+
+.picker__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+}
+
+.picker__actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.empty {
+  width: 100%;
+  padding: 28px;
+  border: 1px dashed var(--p-content-border-color);
+  border-radius: 10px;
+  text-align: center;
+  color: var(--p-text-muted-color);
+  font-size: 12.5px;
+}
+
+/* ── Paneller ── */
+.panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+.panel--warning {
+  border-color: color-mix(in srgb, #b45309 40%, var(--p-content-border-color));
+  background: color-mix(in srgb, #b45309 5%, var(--p-content-background));
+}
+
+.panel--blocking {
+  border-color: color-mix(in srgb, #dc2626 40%, var(--p-content-border-color));
+  background: color-mix(in srgb, #dc2626 5%, var(--p-content-background));
+}
+
+.panel__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.panel--warning .panel__title {
+  color: #b45309;
+}
+
+.panel--blocking .panel__title {
+  color: #b91c1c;
+}
+
+.issues {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.issues__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--p-content-hover-background);
+  font-size: 12px;
+}
+
+.issues__tag {
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--p-content-border-color);
+  font-family: ui-monospace, monospace;
+  font-size: 10.5px;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.summary__chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--p-content-hover-background);
+  color: var(--p-text-muted-color);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Matris ── */
+.tablewrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.matrix th,
+.matrix td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--p-content-border-color);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.matrix thead th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+  background: var(--p-content-hover-background);
+  white-space: nowrap;
+}
+
+.matrix__code {
+  width: 90px;
+}
+
+.matrix__desc {
+  min-width: 220px;
+}
+
+.matrix__act {
+  width: 96px;
+  text-align: center;
+}
+
+.matrix__actname {
+  display: block;
+}
+
+.matrix__acthint {
+  display: block;
+  font-weight: 400;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.matrix__total {
+  width: 84px;
+  text-align: right;
+}
+
+.matrix__ops {
+  width: 72px;
+  white-space: nowrap;
+}
+
+.matrix__empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--p-text-muted-color);
+  font-style: italic;
+}
+
+.matrix__row--expanded > td {
+  border-bottom-color: transparent;
+  background: var(--p-content-hover-background);
+}
+
+/* ── Hücreler ── */
+.cell {
+  width: 100%;
+  padding: 4px 7px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--p-text-color);
+  font-size: 12px;
+}
+
+.cell:hover {
+  border-color: var(--p-content-border-color);
+}
+
+.cell:focus {
+  outline: none;
+  border-color: var(--app-brand, #6366f1);
+  background: var(--p-content-background);
+}
+
+.cell--code {
+  font-weight: 600;
+}
+
+.cell--num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ağırlık var, bağlı soru yok: hesabı durduran hâl. */
+.cell--warn {
+  border-color: #b45309;
+  background: color-mix(in srgb, #b45309 10%, transparent);
+}
+
+.weightcell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+}
+
+.weightcell__links {
+  font-size: 9.5px;
+  color: var(--p-text-muted-color);
+  text-align: right;
+  padding-right: 7px;
+}
+
+/* Ağırlık toplamı — N1 kuralının görünür hâli. */
+.total {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.total--ok {
+  background: color-mix(in srgb, #15803d 15%, transparent);
+  color: #15803d;
+}
+
+/* %0 = henüz kurulmamış taslak; hata değil ama tamam da değil. */
+.total--draft {
+  background: var(--p-content-hover-background);
+  color: var(--p-text-muted-color);
+}
+
+.total--bad {
+  background: color-mix(in srgb, #dc2626 14%, transparent);
+  color: #b91c1c;
+}
+
+/* ── Soru bağları ── */
+.links > td {
+  background: var(--p-content-hover-background);
+  padding-top: 0;
+}
+
+.links__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 4px 12px;
+}
+
+.links__lead {
+  margin: 0;
+  max-width: 80ch;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--p-text-muted-color);
+}
+
+.links__group {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.links__act {
+  flex: 0 0 110px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.links__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.links__empty {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--p-text-muted-color);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 999px;
+  background: var(--p-content-background);
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.chip input {
+  margin: 0;
+}
+
+.chip--on {
+  border-color: color-mix(in srgb, #15803d 45%, transparent);
+  background: color-mix(in srgb, #15803d 10%, transparent);
+  color: #15803d;
+  font-weight: 600;
+}
+
+/* Tam puanı sıfır olan soru: bağlanırsa hesabı durdurur. */
+.chip--zero {
+  border-style: dashed;
+  border-color: #b45309;
+  color: #b45309;
+}
+
+.chip__pt {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.rulenote {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  max-width: 80ch;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--p-text-muted-color);
+}

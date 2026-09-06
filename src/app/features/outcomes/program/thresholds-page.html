@@ -1,0 +1,173 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <h1 class="page__title">Eşik Değerler</h1>
+      <p class="page__lead">
+        Eşik, çıktı hesabının <strong>son adımı</strong>: öğrencinin ders çıktısı
+        ortalaması (0–5) geçme eşiğiyle karşılaştırılıp başarılı/başarısız kararına
+        dönüşür. Yürürlükte eşiği olmayan bir program çıktısı hesabı <strong>durdurur</strong>.
+      </p>
+    </div>
+  </header>
+
+  <div class="picker">
+    <label class="picker__field">
+      <span class="picker__label">Program çıktısı</span>
+      <p-select
+        [options]="outcomeOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="store.selectedId()"
+        (ngModelChange)="onOutcomeChange($event)"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Çıktı seçin"
+        appendTo="body"
+        [disabled]="store.items().length === 0"
+      />
+    </label>
+  </div>
+
+  @if (store.error(); as error) {
+    <p-message severity="error" [text]="error" styleClass="page__message" />
+  }
+
+  @if (store.feedback(); as feedback) {
+    <p-message [severity]="feedback.severity" [text]="feedback.text" styleClass="page__message" />
+  }
+
+  @if (store.loading()) {
+    <p-skeleton height="8rem" />
+  } @else if (store.items().length === 0) {
+    <p class="empty">
+      Henüz program çıktısı yok. Önce <strong>Program Çıktıları</strong> ekranından
+      tanımlayın; eşik onlara bağlanır.
+    </p>
+  } @else if (store.selectedId() === null) {
+    <p class="empty">Eşiklerini görmek için bir program çıktısı seçin.</p>
+  } @else {
+    @if (store.thresholdsLoading()) {
+      <p-skeleton height="6rem" />
+    } @else {
+      @if (!store.activeThreshold()) {
+        <p-message
+          severity="warn"
+          text="Bu çıktının yürürlükte eşiği yok — çıktı hesabı bu hâlde koşmaz."
+          styleClass="page__message"
+        />
+      }
+
+      <div class="tablewrap">
+        <table class="grid">
+          <thead>
+            <tr>
+              <th class="grid__num">Geçme eşiği</th>
+              <th class="grid__num">Hedef</th>
+              <th>Durum</th>
+              <th class="grid__ops"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (threshold of store.thresholds(); track threshold.id) {
+              <tr [class.grid__row--active]="threshold.isActive">
+                <td class="grid__num grid__min">{{ threshold.minValue }}</td>
+                <td class="grid__num">{{ threshold.targetValue }}</td>
+                <td>
+                  @if (threshold.isActive) {
+                    <span class="badge badge--on">yürürlükte</span>
+                  } @else {
+                    <span class="badge">pasif</span>
+                  }
+                </td>
+                <td class="grid__ops">
+                  @if (!threshold.isActive) {
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm"
+                      *appHasAction="'APPROVE'; operation: 'THRESHOLD_ACTIVATION'"
+                      [disabled]="store.saving()"
+                      pTooltip="Bundan sonraki hesaplar bu değerle karar verir"
+                      tooltipPosition="top"
+                      (click)="confirmActivate(threshold)"
+                    >
+                      Yürürlüğe al
+                    </button>
+                  }
+
+                  <button
+                    type="button"
+                    class="row__action row__action--danger"
+                    *appHasAction="'DELETE'; operation: 'THRESHOLD'"
+                    [disabled]="store.saving()"
+                    pTooltip="Sil"
+                    tooltipPosition="top"
+                    aria-label="Sil"
+                    (click)="confirmDelete(threshold)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="grid__empty">Bu çıktı için tanımlı eşik yok.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!--
+        YENİ EŞİK PASİF EKLENİR. Sessizce yürürlüğe girseydi, eski dönemin hesabı
+        farkında olunmadan değişirdi — yürürlüğe almak ayrı bir eylem ve ayrı bir yetki.
+      -->
+      <div class="add" *appHasAction="'CREATE'; operation: 'THRESHOLD'">
+        <span class="add__title">Yeni eşik</span>
+
+        <label class="add__field">
+          <span class="add__label">Geçme eşiği</span>
+          <input
+            type="number"
+            class="add__input"
+            min="0"
+            max="5"
+            step="0.25"
+            [ngModel]="newMinValue()"
+            (ngModelChange)="newMinValue.set($event)"
+          />
+        </label>
+
+        <label class="add__field">
+          <span class="add__label">Hedef</span>
+          <input
+            type="number"
+            class="add__input"
+            min="0"
+            max="5"
+            step="0.25"
+            [ngModel]="newTargetValue()"
+            (ngModelChange)="newTargetValue.set($event)"
+          />
+        </label>
+
+        <button
+          type="button"
+          class="btn btn--primary btn--sm"
+          [disabled]="!!addBlockedReason() || store.saving()"
+          [pTooltip]="addBlockedReason() ?? 'Pasif olarak eklenir'"
+          tooltipPosition="top"
+          (click)="addThreshold()"
+        >
+          <i class="pi pi-plus" aria-hidden="true"></i> Ekle
+        </button>
+
+        <p class="add__note">
+          Yeni eşik <strong>pasif</strong> eklenir; yürürlüğe almak ayrı bir adımdır.
+          Hesap yalnızca <strong>geçme eşiğini</strong> okur — hedef değer raporlama içindir.
+        </p>
+      </div>
+    }
+  }
+</section>
+
+<p-confirmdialog />

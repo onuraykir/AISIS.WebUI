@@ -1,0 +1,316 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <h1 class="page__title">Çıktı Eşleştirme</h1>
+      <p class="page__lead">
+        Ders çıktılarının hangi etkinlikten <strong>ne ağırlıkla</strong> ölçüldüğünü ve
+        hangi <strong>soruların</strong> onları ölçtüğünü belirler. Çıktı hesabının hem
+        payı hem paydası buradan çıkar.
+      </p>
+    </div>
+  </header>
+
+  <div class="picker">
+    <label class="picker__field">
+      <span class="picker__label">Dönem</span>
+      <p-select
+        [options]="semesterOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="store.semesterId()"
+        (ngModelChange)="onSemesterChange($event)"
+        placeholder="Dönem seçin"
+        appendTo="body"
+      />
+    </label>
+
+    <label class="picker__field picker__field--wide">
+      <span class="picker__label">Ders açılışı</span>
+      <p-select
+        [options]="offeringOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="store.offeringId()"
+        (ngModelChange)="onOfferingChange($event)"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Açılış seçin"
+        appendTo="body"
+        [disabled]="store.offerings().length === 0"
+      />
+    </label>
+
+    <div class="picker__actions">
+      <button
+        type="button"
+        class="btn btn--ghost"
+        [disabled]="store.offeringId() === null || store.saving()"
+        (click)="preview()"
+      >
+        <i class="pi pi-eye" aria-hidden="true"></i> Ne değişecek?
+      </button>
+
+      <button
+        type="button"
+        class="btn btn--primary"
+        *appHasAction="'UPDATE'; operation: 'MAPPING'"
+        [disabled]="!!saveBlockedReason() || store.saving()"
+        [pTooltip]="saveBlockedReason() ?? 'Matrisi kaydet'"
+        tooltipPosition="top"
+        (click)="save()"
+      >
+        @if (store.saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        Kaydet
+      </button>
+    </div>
+  </div>
+
+  @if (store.error(); as error) {
+    <p-message severity="error" [text]="error" styleClass="page__message" />
+  }
+
+  @if (store.feedback(); as feedback) {
+    <p-message [severity]="feedback.severity" [text]="feedback.text" styleClass="page__message" />
+  }
+
+  @if (store.loading()) {
+    <p-skeleton height="10rem" />
+  } @else if (store.offeringId() === null) {
+    <p class="empty">Matrisi görmek için bir ders açılışı seçin.</p>
+  } @else {
+    @if (store.activities().length === 0) {
+      <p class="empty">
+        Bu açılışta değerlendirme etkinliği yok. Matris kurulamaz —
+        önce <strong>Ders Açılışı</strong> ekranından vize, final, ödev ekleyin.
+      </p>
+    }
+
+    @if (store.localIssues().length > 0) {
+      <div class="panel panel--warning">
+        <h2 class="panel__title">
+          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+          Kaydetmeden önce düzeltilmesi gerekenler
+        </h2>
+        <ul class="issues">
+          @for (issue of store.localIssues(); track $index) {
+            <li class="issues__row"><span class="issues__text">{{ issue }}</span></li>
+          }
+        </ul>
+      </div>
+    }
+
+    <!-- ÖNİZLEME: sunucunun ne yapacağını kaydetmeden önce söyler. -->
+    @if (store.comparison(); as comparison) {
+      <div class="panel" [class.panel--blocking]="!comparison.canConfirm">
+        <h2 class="panel__title">
+          @if (comparison.canConfirm) {
+            <i class="pi pi-check-circle" aria-hidden="true"></i> Kaydedilecek değişiklikler
+          } @else {
+            <i class="pi pi-ban" aria-hidden="true"></i>
+            {{ comparison.blockingIssues.length }} engel — kaydedilemez
+          }
+        </h2>
+
+        @if (comparison.blockingIssues.length > 0) {
+          <ul class="issues">
+            @for (issue of comparison.blockingIssues; track $index) {
+              <li class="issues__row">
+                @if (issue.identifier) {
+                  <span class="issues__tag">{{ issue.identifier }}</span>
+                }
+                <span class="issues__text">{{ issue.message }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="summary">
+            <span class="summary__chip">{{ comparison.summary.newOutcomeCount }} yeni çıktı</span>
+            <span class="summary__chip">{{ comparison.summary.modifiedOutcomeCount }} değişen</span>
+            <span class="summary__chip">{{ comparison.summary.deletedOutcomeCount }} silinen</span>
+            <span class="summary__chip">{{ comparison.summary.newWeightCount }} yeni ağırlık</span>
+            <span class="summary__chip">{{ comparison.summary.deletedWeightCount }} kalkan ağırlık</span>
+            <span class="summary__chip">{{ comparison.summary.newItemLinkCount }} yeni soru bağı</span>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="tablewrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th class="matrix__code">Kod</th>
+            <th class="matrix__desc">Açıklama</th>
+            @for (activity of store.activities(); track activity.id) {
+              <th class="matrix__act">
+                <span class="matrix__actname">{{ activity.name }}</span>
+                <span class="matrix__acthint">%</span>
+              </th>
+            }
+            <th class="matrix__total">Toplam</th>
+            <th class="matrix__ops"></th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (row of store.rows(); track $index; let i = $index) {
+            <tr [class.matrix__row--expanded]="expandedRow() === i">
+              <td class="matrix__code">
+                <input
+                  type="text"
+                  class="cell cell--code"
+                  [ngModel]="row.code"
+                  (ngModelChange)="store.updateRow(i, { code: $event })"
+                  placeholder="CO1"
+                />
+              </td>
+
+              <td class="matrix__desc">
+                <input
+                  type="text"
+                  class="cell"
+                  [ngModel]="row.description"
+                  (ngModelChange)="store.updateRow(i, { description: $event })"
+                  placeholder="Öğrenci … yapabilir"
+                />
+              </td>
+
+              @for (activity of store.activities(); track activity.id) {
+                <td class="matrix__act">
+                  <div class="weightcell">
+                    <input
+                      type="number"
+                      class="cell cell--num"
+                      [class.cell--warn]="isWeightedWithoutItems(row, activity)"
+                      min="0"
+                      max="100"
+                      step="5"
+                      [ngModel]="weightOf(row, activity)"
+                      (ngModelChange)="onWeightInput(i, activity.id, $event)"
+                      [pTooltip]="
+                        isWeightedWithoutItems(row, activity)
+                          ? 'Ağırlık var ama bu etkinlikten bağlı soru yok — hesap koşmaz.'
+                          : ''
+                      "
+                      [tooltipDisabled]="!isWeightedWithoutItems(row, activity)"
+                      tooltipPosition="top"
+                    />
+                    @if (linkedCountIn(row, activity.id); as count) {
+                      <span class="weightcell__links">{{ count }} soru</span>
+                    }
+                  </div>
+                </td>
+              }
+
+              <td class="matrix__total">
+                <span [class]="totalClass(totalOf(i))">%{{ totalOf(i) }}</span>
+              </td>
+
+              <td class="matrix__ops">
+                <button
+                  type="button"
+                  class="row__action"
+                  [pTooltip]="expandedRow() === i ? 'Soru bağlarını gizle' : 'Soru bağları'"
+                  tooltipPosition="top"
+                  aria-label="Soru bağları"
+                  (click)="toggleExpand(i)"
+                >
+                  <i class="pi" [class.pi-chevron-down]="expandedRow() !== i" [class.pi-chevron-up]="expandedRow() === i"></i>
+                </button>
+
+                <button
+                  type="button"
+                  class="row__action row__action--danger"
+                  *appHasAction="'UPDATE'; operation: 'MAPPING'"
+                  pTooltip="Kaldır"
+                  tooltipPosition="top"
+                  aria-label="Kaldır"
+                  (click)="confirmRemove(i)"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </td>
+            </tr>
+
+            <!--
+              SORU BAĞLARI. Matrisin ikinci işi: hangi soru bu çıktıyı ölçüyor.
+              Formülün paydası yalnızca BURADA işaretlenen soruların tam puanları.
+            -->
+            @if (expandedRow() === i) {
+              <tr class="links">
+                <td [attr.colspan]="store.activities().length + 4">
+                  <div class="links__body">
+                    <p class="links__lead">
+                      <strong>{{ row.code || 'Bu çıktıyı' }}</strong> ölçen soruları işaretleyin.
+                      İşaretlenmeyen soru hesaba <strong>hiç girmez</strong>; formülün paydası
+                      yalnızca işaretlenenlerin tam puanları.
+                    </p>
+
+                    @for (activity of store.activities(); track activity.id) {
+                      <div class="links__group">
+                        <span class="links__act">{{ activity.name }}</span>
+
+                        <div class="links__items">
+                          @for (item of store.itemsByActivity().get(activity.id) ?? []; track item.id) {
+                            <label
+                              class="chip"
+                              [class.chip--on]="isLinked(row, item.id)"
+                              [class.chip--zero]="item.maxPoint <= 0"
+                              [pTooltip]="
+                                item.maxPoint <= 0
+                                  ? 'Tam puanı yok — bu soru bağlanırsa hesap koşmaz.'
+                                  : ''
+                              "
+                              [tooltipDisabled]="item.maxPoint > 0"
+                              tooltipPosition="top"
+                            >
+                              <input
+                                type="checkbox"
+                                [checked]="isLinked(row, item.id)"
+                                (change)="store.toggleItemLink(i, item.id)"
+                              />
+                              {{ item.name }}
+                              <span class="chip__pt">{{ item.maxPoint }}p</span>
+                            </label>
+                          } @empty {
+                            <span class="links__empty">Soru yok.</span>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td [attr.colspan]="store.activities().length + 4" class="matrix__empty">
+                Henüz çıktı yok. Aşağıdan ekleyin.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn--ghost btn--sm"
+      *appHasAction="'UPDATE'; operation: 'MAPPING'"
+      (click)="store.addRow()"
+    >
+      <i class="pi pi-plus" aria-hidden="true"></i> Ders çıktısı
+    </button>
+
+    <p class="rulenote">
+      <i class="pi pi-info-circle" aria-hidden="true"></i>
+      Bir çıktının ağırlıkları <strong>%100</strong> etmelidir — tavanın 5,00'te sabit
+      kalması buna dayanır. <strong>%0</strong> serbesttir: henüz kurulmamış taslak
+      çıktı demektir, ama hesap o hâlde koşmaz.
+    </p>
+  }
+</section>
+
+<p-confirmdialog />

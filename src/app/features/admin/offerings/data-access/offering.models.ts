@@ -90,6 +90,41 @@ export interface OfferingActivity {
 
   /** Girilmiş puan sayısı; sıfırdan büyükse etkinlik silinemez. */
   readonly scoreCount: number;
+
+  /** Etkinliğin soruları, sıraya göre. */
+  readonly items: readonly OfferingActivityItem[];
+}
+
+/**
+ * Etkinliğin bir sorusu.
+ *
+ * `maxPoint` ÇIKTI HESABININ PAYDASIDIR: bir ders çıktısının başarısı, ona bağlı
+ * soruların alınan puanları / tam puanları oranından çıkar. Sorular bugün yalnızca
+ * not Excel'inden doğuyor ve dosyada tam puan alanı yok — yani **sıfırla** doğuyorlar.
+ * Sıfır kalan bir soru kümesi hesabı tümden engeller; bu ekran o eksiği kapatır.
+ */
+export interface OfferingActivityItem {
+  readonly id: number;
+  readonly name: string;
+  readonly maxPoint: number;
+  readonly sequenceNo: number;
+
+  /** Girilmiş puan sayısı; sıfırdan büyükse soru silinemez. */
+  readonly scoreCount: number;
+}
+
+export interface OfferingActivityItemCreateCommand {
+  readonly name: string;
+  readonly maxPoint: number;
+
+  /** Verilmezse sunucu sona ekler. */
+  readonly sequenceNo: number | null;
+}
+
+export interface OfferingActivityItemUpdateCommand {
+  readonly name: string;
+  readonly maxPoint: number;
+  readonly sequenceNo: number;
 }
 
 export interface OfferingActivityCreateCommand {

@@ -1,0 +1,73 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '480px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="po-code">Kod</label>
+      <input id="po-code" pInputText formControlName="code" placeholder="PÇ1" autocomplete="off" />
+      <p class="form__help">Raporlarda ve matriste bu kodla anılır.</p>
+
+      @if (form.controls.code.touched && form.controls.code.invalid) {
+        <p class="form__error">Kod zorunludur ve en fazla 20 karakter olabilir.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="po-desc">Açıklama</label>
+      <input
+        id="po-desc"
+        pInputText
+        formControlName="description"
+        placeholder="Mühendislik problemlerini tanımlar, formüle eder ve çözer"
+        autocomplete="off"
+      />
+
+      @if (form.controls.description.touched && form.controls.description.invalid) {
+        <p class="form__error">Açıklama zorunludur ve en fazla 500 karakter olabilir.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="po-version">Sürüm</label>
+      <input
+        id="po-version"
+        pInputText
+        formControlName="version"
+        placeholder="2024"
+        autocomplete="off"
+      />
+      <p class="form__help">
+        Akreditasyon döngüsünde çıktı metinleri değişir; geçmiş dönemin raporu
+        <strong>eski sürüme</strong> dayanmalıdır.
+      </p>
+
+      @if (form.controls.version.touched && form.controls.version.invalid) {
+        <p class="form__error">Sürüm zorunludur.</p>
+      }
+    </div>
+
+    <label class="form__check">
+      <input type="checkbox" formControlName="isActive" />
+      Yürürlükte
+    </label>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Ekle' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

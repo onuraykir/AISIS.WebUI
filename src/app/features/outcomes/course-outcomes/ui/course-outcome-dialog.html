@@ -1,0 +1,62 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '520px' }"
+>
+  @if (offeringLabel(); as label) {
+    <p class="form__context">
+      <i class="pi pi-book" aria-hidden="true"></i>
+      <span>{{ label }}</span>
+    </p>
+  }
+
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__field">
+      <label class="form__label" for="co-code">Kod</label>
+      <input id="co-code" pInputText formControlName="code" placeholder="DÇ1" autocomplete="off" />
+      <p class="form__help">Matriste ve kapanış raporunda bu kodla anılır.</p>
+
+      @if (form.controls.code.touched && form.controls.code.invalid) {
+        <p class="form__error">Kod zorunludur ve en fazla 20 karakter olabilir.</p>
+      } @else if (codeTaken()) {
+        <p class="form__error">Bu açılışta aynı kodlu bir çıktı zaten var.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="co-desc">Açıklama</label>
+      <textarea
+        id="co-desc"
+        pTextarea
+        formControlName="description"
+        rows="4"
+        placeholder="Öğrenci, veri yapılarını problem türüne göre seçer ve gerekçelendirir"
+      ></textarea>
+      <p class="form__help">
+        Kazanım cümlesi. Ölçülebilir bir eylem içermeli — kapanış raporunda denetçinin
+        okuduğu metin budur.
+      </p>
+
+      @if (form.controls.description.touched && form.controls.description.invalid) {
+        <p class="form__error">Açıklama zorunludur ve en fazla 1000 karakter olabilir.</p>
+      }
+    </div>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving() || codeTaken()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Ekle' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>

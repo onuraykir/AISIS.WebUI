@@ -11,6 +11,28 @@ import { Type } from '@angular/core';
  * "hazırlanmadı" ekranına düşer.
  */
 export const IMPLEMENTED_PAGES: Record<string, () => Promise<Type<unknown>>> = {
+  '/ders-cikti/liste': () =>
+    import('@features/outcomes/course-outcomes/course-outcomes-page').then(
+      (m) => m.CourseOutcomesPage,
+    ),
+  '/ders-cikti/hesap': () =>
+    import('@features/outcomes/calculation/calculation-page').then((m) => m.CalculationPage),
+  '/ders-cikti/eslestirme': () =>
+    import('@features/outcomes/matrix/matrix-page').then((m) => m.MatrixPage),
+  '/program-cikti/liste': () =>
+    import('@features/outcomes/program/program-outcomes-page').then((m) => m.ProgramOutcomesPage),
+  '/program-cikti/ders-eslestirme': () =>
+    import('@features/outcomes/course-mapping/course-mapping-page').then(
+      (m) => m.CourseMappingPage,
+    ),
+  '/program-cikti/esik-deger': () =>
+    import('@features/outcomes/program/thresholds-page').then((m) => m.ThresholdsPage),
+  '/degerlendirme/etkinlik': () =>
+    import('@features/assessment/activities/activities-page').then((m) => m.ActivitiesPage),
+  '/degerlendirme/not-yukle': () =>
+    import('@features/assessment/score-import/score-import-page').then((m) => m.ScoreImportPage),
+  '/degerlendirme/notlar': () =>
+    import('@features/assessment/scores/scores-page').then((m) => m.ScoresPage),
   '/tanim/bolum': () =>
     import('@features/admin/departments/department-tree-page').then((m) => m.DepartmentTreePage),
   '/tanim/ders': () => import('@features/admin/courses/courses-page').then((m) => m.CoursesPage),

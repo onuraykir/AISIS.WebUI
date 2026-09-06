@@ -409,6 +409,81 @@
                     <i class="pi pi-trash"></i>
                   </button>
                 </div>
+
+                <!--
+                  SORULAR. Tam puan çıktı hesabının paydası olduğu için burada
+                  gösteriliyor: sıfır tam puanlı bir soru hesabı engeller ve bunun
+                  tek görünür olduğu yer burası.
+                -->
+                <ul class="items">
+                  @for (item of activity.items; track item.id) {
+                    <li class="items__row" [class.items__row--warn]="item.maxPoint <= 0">
+                      <span class="items__name">{{ item.name }}</span>
+
+                      <span class="items__point">
+                        @if (item.maxPoint > 0) {
+                          {{ item.maxPoint }} puan
+                        } @else {
+                          <span
+                            class="items__missing"
+                            pTooltip="Tam puanı girilmemiş. Bu soru bir ders çıktısına bağlıysa çıktı hesabı koşmaz — paydası sıfıra düşer."
+                            tooltipPosition="top"
+                          >
+                            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                            tam puan yok
+                          </span>
+                        }
+                        @if (item.scoreCount > 0) {
+                          · {{ item.scoreCount }} not
+                        }
+                      </span>
+
+                      <span class="items__actions">
+                        <button
+                          type="button"
+                          class="row__action"
+                          aria-label="Soruyu düzenle"
+                          *appHasAction="'UPDATE'; operation: 'OFFERING_ACTIVITY_ITEM'"
+                          [disabled]="store.saving() || !store.activityWritable()"
+                          [pTooltip]="store.activityLockReason() ?? 'Düzenle'"
+                          tooltipPosition="top"
+                          (click)="openItemEdit(activity, item)"
+                        >
+                          <i class="pi pi-pencil"></i>
+                        </button>
+
+                        <button
+                          type="button"
+                          class="row__action row__action--danger"
+                          aria-label="Soruyu kaldır"
+                          *appHasAction="'DELETE'; operation: 'OFFERING_ACTIVITY_ITEM'"
+                          [disabled]="store.saving() || !!itemDeleteBlockedReason(item)"
+                          [pTooltip]="itemDeleteBlockedReason(item) ?? 'Kaldır'"
+                          tooltipPosition="top"
+                          (click)="confirmRemoveItem(item)"
+                        >
+                          <i class="pi pi-trash"></i>
+                        </button>
+                      </span>
+                    </li>
+                  } @empty {
+                    <li class="items__empty">Soru yok — çıktı eşleştirmesi için gerekli.</li>
+                  }
+
+                  <li class="items__add">
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm"
+                      *appHasAction="'CREATE'; operation: 'OFFERING_ACTIVITY_ITEM'"
+                      [disabled]="store.saving() || !store.activityWritable()"
+                      [pTooltip]="store.activityLockReason() ?? 'Bu etkinliğe soru ekle'"
+                      tooltipPosition="top"
+                      (click)="openItemCreate(activity)"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i> Soru
+                    </button>
+                  </li>
+                </ul>
               </li>
             } @empty {
               <li class="assignments__empty">Henüz etkinlik eklenmedi.</li>
@@ -530,6 +605,16 @@
   [usedNames]="usedActivityNames()"
   [saving]="store.saving()"
   (save)="onActivitySave($event)"
+/>
+
+<!-- ── Soru ── -->
+<app-offering-activity-item-dialog
+  [(visible)]="itemDialogOpen"
+  [item]="itemInDialog()"
+  [activityName]="activityOfItemDialog()?.name ?? ''"
+  [usedNames]="usedItemNames()"
+  [saving]="store.saving()"
+  (save)="onItemSave($event)"
 />
 
 <p-confirmdialog />

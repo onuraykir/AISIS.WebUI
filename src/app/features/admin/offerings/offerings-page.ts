@@ -32,11 +32,16 @@ import {
   CourseInstructorRole,
   CourseInstructorRoleValue,
   OfferingActivity,
+  OfferingActivityItem,
   OfferingInstructor,
   OfferingListItem,
   OfferingStudent,
 } from './data-access/offering.models';
 import { OfferingActivityDialog, OfferingActivityFormResult } from './ui/offering-activity-dialog';
+import {
+  OfferingActivityItemDialog,
+  OfferingActivityItemFormResult,
+} from './ui/offering-activity-item-dialog';
 
 /**
  * Ders Açılışı ekranı (akıllı bileşen).
@@ -62,6 +67,7 @@ import { OfferingActivityDialog, OfferingActivityFormResult } from './ui/offerin
     AdminFilterBar,
     PickerDialog,
     OfferingActivityDialog,
+    OfferingActivityItemDialog,
   ],
   providers: [OfferingStore, ConfirmationService],
   templateUrl: './offerings-page.html',
@@ -80,6 +86,12 @@ export class OfferingsPage implements OnInit {
   protected readonly studentPickerOpen = signal(false);
   protected readonly activityDialogOpen = signal(false);
   protected readonly activityInDialog = signal<OfferingActivity | null>(null);
+
+  protected readonly itemDialogOpen = signal(false);
+  protected readonly itemInDialog = signal<OfferingActivityItem | null>(null);
+
+  /** Soru diyaloğunun bağlamı: hangi etkinliğin sorusu düzenleniyor. */
+  protected readonly activityOfItemDialog = signal<OfferingActivity | null>(null);
 
   /** Seçim ekranlarının kendi süzgeçleri; hepsi sunucuda çalışıyor. */
   protected readonly courseSearch = signal('');
@@ -114,6 +126,11 @@ export class OfferingsPage implements OnInit {
       .filter((activity) => activity.id !== editingId)
       .map((activity) => activity.name);
   });
+
+  /** Aynı etkinlik içindeki diğer soru adları; çakışma buradan okunuyor. */
+  protected readonly usedItemNames = computed(
+    () => this.activityOfItemDialog()?.items.map((item) => item.name) ?? [],
+  );
 
   private readonly departments = signal<{ value: number | null; label: string }[]>([]);
 
@@ -407,6 +424,60 @@ export class OfferingsPage implements OnInit {
       rejectButtonStyleClass: 'p-button-text p-button-sm',
       accept: () => void this.store.removeActivity(activity.id),
     });
+  }
+
+  // ── Sorular ──
+  //
+  // TAM PUAN NEDEN BURADA: çıktı hesabının paydası, bir ders çıktısına bağlı
+  // soruların tam puanları toplamıdır. Sorular not Excel'inden sıfır tam puanla
+  // doğuyor (dosyada alan yok) ve sıfır payda hesabı tümden engelliyor — düzeltmenin
+  // tek yolu bu ekran.
+
+  protected openItemCreate(activity: OfferingActivity): void {
+    this.activityOfItemDialog.set(activity);
+    this.itemInDialog.set(null);
+    this.itemDialogOpen.set(true);
+  }
+
+  protected openItemEdit(activity: OfferingActivity, item: OfferingActivityItem): void {
+    this.activityOfItemDialog.set(activity);
+    this.itemInDialog.set(item);
+    this.itemDialogOpen.set(true);
+  }
+
+  protected async onItemSave(result: OfferingActivityItemFormResult): Promise<void> {
+    const ok =
+      result.mode === 'create'
+        ? await this.store.addActivityItem(this.activityOfItemDialog()!.id, result.command)
+        : await this.store.updateActivityItem(this.itemInDialog()!.id, result.command);
+
+    if (ok) {
+      this.itemDialogOpen.set(false);
+    }
+  }
+
+  protected confirmRemoveItem(item: OfferingActivityItem): void {
+    this.confirmation.confirm({
+      header: 'Soruyu kaldır',
+      message: `"${item.name}" sorusu kaldırılacak. Çıktı eşleştirmesindeki bağları da gider.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Kaldır',
+      rejectLabel: 'Vazgeç',
+      acceptButtonStyleClass: 'p-button-danger p-button-sm',
+      rejectButtonStyleClass: 'p-button-text p-button-sm',
+      accept: () => void this.store.removeActivityItem(item.id),
+    });
+  }
+
+  /** Sorunun silinmesi neden engelli? Boşsa serbest. */
+  protected itemDeleteBlockedReason(item: OfferingActivityItem): string | null {
+    if (!this.store.activityWritable()) {
+      return this.store.activityLockReason();
+    }
+
+    return item.scoreCount > 0
+      ? `${item.scoreCount} girilmiş puan var. Soru silinemez; önce puanları temizleyin.`
+      : null;
   }
 
   /** Silme neden engelli? Boşsa serbest. */

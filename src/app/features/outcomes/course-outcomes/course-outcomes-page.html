@@ -1,0 +1,159 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <h1 class="page__title">Ders Çıktıları</h1>
+      <p class="page__lead">
+        Bir açılışın kazanımları. Program çıktısıyla karıştırılmamalı — o mezunun
+        yeterliliği, bu tek dersin hedefi. <strong>Açılışa bağlıdır:</strong> aynı
+        dersin bu dönemki çıktısı ile geçen dönemki çıktısı ayrı kayıtlardır, böylece
+        şablon değiştiğinde geçmiş dönemin sayıları bozulmaz.
+      </p>
+    </div>
+
+    <div class="page__actions">
+      <button
+        type="button"
+        class="btn btn--ghost"
+        [disabled]="store.loading() || context.offeringId() === null"
+        (click)="reload()"
+      >
+        <i class="pi pi-refresh" [class.pi-spin]="store.loading()" aria-hidden="true"></i> Yenile
+      </button>
+
+      <button
+        type="button"
+        class="btn btn--primary"
+        *appHasAction="'CREATE'; operation: 'COURSE_OUTCOME'"
+        [disabled]="context.offeringId() === null"
+        [pTooltip]="context.offeringId() === null ? 'Önce bir ders açılışı seçin' : 'Yeni ders çıktısı'"
+        tooltipPosition="top"
+        (click)="openCreate()"
+      >
+        <i class="pi pi-plus" aria-hidden="true"></i> Ders Çıktısı
+      </button>
+    </div>
+  </header>
+
+  <div class="picker">
+    <label class="picker__field">
+      <span class="picker__label">Dönem</span>
+      <p-select
+        [options]="context.semesterOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="context.semesterId()"
+        (ngModelChange)="onSemesterChange($event)"
+        placeholder="Dönem seçin"
+        appendTo="body"
+      />
+    </label>
+
+    <label class="picker__field picker__field--wide">
+      <span class="picker__label">Ders açılışı</span>
+      <p-select
+        [options]="context.offeringOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="context.offeringId()"
+        (ngModelChange)="onOfferingChange($event)"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Açılış seçin"
+        appendTo="body"
+        [disabled]="context.offerings().length === 0"
+      />
+    </label>
+  </div>
+
+  @if (context.error(); as error) {
+    <p-message severity="error" [text]="error" styleClass="page__message" />
+  }
+
+  @if (store.feedback(); as feedback) {
+    <p-message [severity]="feedback.severity" [text]="feedback.text" styleClass="page__message" />
+  }
+
+  @if (context.offeringId() === null) {
+    <!--
+      SEÇİM YAPILMADAN LİSTE GÖSTERİLMİYOR. "Tüm çıktılar" diye bir liste
+      anlamsız olurdu: çıktı açılışa ait, açılış bilinmeden kod (DÇ1) hangi
+      derse ait olduğunu söylemiyor.
+    -->
+    <p class="hint">
+      <i class="pi pi-arrow-up" aria-hidden="true"></i>
+      Çıktılar ders açılışına ait. Görmek ve eklemek için yukarıdan bir dönem ve
+      ders açılışı seçin.
+    </p>
+  } @else if (store.loading()) {
+    <p-skeleton height="12rem" />
+  } @else {
+    <div class="filter">
+      <input
+        type="search"
+        class="filter__input"
+        [ngModel]="store.search()"
+        (ngModelChange)="store.search.set($event)"
+        placeholder="Kod veya açıklamada ara…"
+      />
+      <span class="filter__count">
+        {{ store.filtered().length }} / {{ store.items().length }} çıktı
+      </span>
+    </div>
+
+    <ul class="list">
+      @for (outcome of store.filtered(); track outcome.id) {
+        <li class="row">
+          <span class="row__main">
+            <span class="row__code">{{ outcome.code }}</span>
+            <span class="row__desc">{{ outcome.description }}</span>
+          </span>
+
+          <span class="row__ops">
+            <button
+              type="button"
+              class="row__action"
+              *appHasAction="'UPDATE'; operation: 'COURSE_OUTCOME'"
+              pTooltip="Düzenle"
+              tooltipPosition="top"
+              aria-label="Düzenle"
+              [disabled]="store.saving()"
+              (click)="openEdit(outcome)"
+            >
+              <i class="pi pi-pencil"></i>
+            </button>
+
+            <button
+              type="button"
+              class="row__action row__action--danger"
+              *appHasAction="'DELETE'; operation: 'COURSE_OUTCOME'"
+              pTooltip="Sil"
+              tooltipPosition="top"
+              aria-label="Sil"
+              [disabled]="store.saving()"
+              (click)="confirmDelete(outcome)"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </span>
+        </li>
+      } @empty {
+        <li class="empty">
+          Bu açılışın henüz ders çıktısı yok. <strong>Zincir buradan başlıyor:</strong>
+          çıktı olmadan eşleştirme matrisinde satır olmaz, matris olmadan çıktı hesabı
+          koşmaz.
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<app-course-outcome-dialog
+  [(visible)]="dialogOpen"
+  [outcome]="outcomeInDialog()"
+  [saving]="store.saving()"
+  [usedCodes]="store.usedCodes()"
+  [offeringLabel]="context.offeringLabel()"
+  (save)="onSave($event)"
+/>
+
+<p-confirmdialog />

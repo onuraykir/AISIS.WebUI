@@ -303,12 +303,17 @@ body {
   padding: 0;
 }
 
-.panel {
+/* AÇILIR PANELE KAPSANDI (`.app-popover` altına).
+   Bu kurallar çıplak `.panel` / `.panel__*` seçicileriyle yazılmıştı ve global
+   oldukları için UYGULAMANIN HER YERİNDEKİ panelleri yakalıyorlardı: çıktı hesabı,
+   not gridi, çıktı matrisi… hepsi `width: 320px`e sıkışıyordu. Buradaki ölçüler
+   yalnızca üst bardaki bildirim/kullanıcı açılırları içindir. */
+.app-popover .panel {
   width: 320px;
   max-width: calc(100vw - 24px);
 }
 
-.panel__head {
+.app-popover .panel__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -317,12 +322,12 @@ body {
   border-bottom: 1px solid var(--p-content-border-color);
 }
 
-.panel__title {
+.app-popover .panel__title {
   font-size: 13px;
   font-weight: 700;
 }
 
-.panel__action {
+.app-popover .panel__action {
   border: 0;
   background: transparent;
   color: var(--p-primary-color);
@@ -331,7 +336,7 @@ body {
   cursor: pointer;
 }
 
-.panel__action:hover {
+.app-popover .panel__action:hover {
   text-decoration: underline;
 }
 

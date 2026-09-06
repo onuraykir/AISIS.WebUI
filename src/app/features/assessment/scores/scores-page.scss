@@ -1,0 +1,282 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px 40px;
+}
+
+.page__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page__title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.page__lead {
+  margin: 0;
+  max-width: 76ch;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--p-text-muted-color);
+}
+
+.page__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.page__message {
+  display: block;
+}
+
+/* Kaydedilmemiş hücre sayısı; düğmenin üstünde durması gerekiyor çünkü
+   kaydetmeden sayfadan çıkmak sessiz veri kaybı olurdu. */
+.badge {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--p-primary-contrast-color);
+  color: var(--p-primary-color);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Dönem → açılış seçici ── */
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+.picker__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 200px;
+}
+
+.picker__field--wide {
+  flex: 1 1 320px;
+}
+
+.picker__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 22px 24px;
+  border: 1px dashed var(--p-content-border-color);
+  border-radius: 10px;
+  color: var(--p-text-muted-color);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.note {
+  margin: 0;
+  max-width: 82ch;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--p-text-muted-color);
+}
+
+/* ── Önizleme paneli ── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 15px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+.panel__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.panel__list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+}
+
+.panel__list--bad {
+  color: #dc2626;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+  padding: 10px 14px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+}
+
+.card--warn {
+  border-color: color-mix(in srgb, #b45309 45%, transparent);
+}
+
+.card__value {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--p-text-color);
+}
+
+.card__label {
+  font-size: 11px;
+  color: var(--p-text-muted-color);
+}
+
+/* ── Grid ── */
+.tbl-wrap {
+  overflow: auto;
+  max-height: 62vh;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+.grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 12px;
+}
+
+.grid th,
+.grid td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--p-content-border-color);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--p-content-hover-background);
+  font-weight: 600;
+}
+
+/* Öğrenci kolonu yatay kaydırmada sabit kalır. */
+.grid__sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--p-content-background);
+}
+
+.grid thead .grid__sticky {
+  z-index: 3;
+  background: var(--p-content-hover-background);
+}
+
+.grid__item {
+  display: block;
+  font-size: 12px;
+}
+
+.grid__activity {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--p-text-muted-color);
+}
+
+.grid__number {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.grid__name {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--p-text-muted-color);
+}
+
+.grid__empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--p-text-muted-color);
+}
+
+.grid__input {
+  width: 62px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--p-text-color);
+  font-size: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid__input:hover:not(:focus) {
+  border-color: var(--p-content-border-color);
+}
+
+.grid__input:focus {
+  border-color: var(--p-primary-color);
+  background: var(--p-content-background);
+  outline: none;
+}
+
+/* Kaydedilmemiş hücre işaretli: hangi düzenlemelerin henüz diskte olmadığı
+   tek bakışta görünmeli. */
+.grid__input--dirty {
+  border-color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+  font-weight: 600;
+}
+
+/* Tam puanı aşan hücre. Sunucu da reddediyor ama hata hesaba sessizce sızan
+   türden — yazıldığı anda görünmesi gerekiyor. */
+.grid__input--over,
+.grid__input--over:hover:not(:focus) {
+  border-color: #dc2626;
+  background: color-mix(in srgb, #dc2626 10%, transparent);
+  color: #dc2626;
+  font-weight: 700;
+}

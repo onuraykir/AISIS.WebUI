@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { ApiClient } from '@core/api/api-client';
 import { CreatedId } from '@core/api/api-result.model';
 import {
+  SemesterClosure,
   SemesterCreateCommand,
   SemesterDetail,
   SemesterFilter,
@@ -46,5 +47,19 @@ export class SemesterAdminApi {
 
   remove(id: number): Observable<string> {
     return this.api.deleteCommand(`${this.base}/${id}`);
+  }
+
+  // ── Kapanış ──
+  //
+  // Düzenleme formundan YAPILAMAZ ve bu bilinçli: ön koşulu K3 (bütün açılışlar
+  // kapalı) ve yan etkisi genel program çıktısı sonuçlarının yeniden hesaplanması.
+
+  /** K3 denetimini koşar, kapatmaz. Hangi açılışların açık kaldığını söyler. */
+  closurePreview(id: number): Observable<SemesterClosure> {
+    return this.api.get<SemesterClosure>(`${this.base}/${id}/closure`);
+  }
+
+  close(id: number): Observable<SemesterClosure> {
+    return this.api.post<SemesterClosure>(`${this.base}/${id}/close`, null);
   }
 }

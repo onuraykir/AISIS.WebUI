@@ -1,0 +1,88 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="heading()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  styleClass="app-dialog"
+  [style]="{ width: '440px' }"
+>
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    @if (activityName()) {
+      <p class="form__context">
+        <strong>{{ activityName() }}</strong> etkinliğinin sorusu
+      </p>
+    }
+
+    <div class="form__field">
+      <label class="form__label" for="item-name">Soru</label>
+      <input
+        id="item-name"
+        pInputText
+        formControlName="name"
+        placeholder="S1"
+        autocomplete="off"
+      />
+      <p class="form__help">
+        Not dosyasındaki sütun başlığı budur; etkinlik içinde benzersiz olmalıdır.
+      </p>
+
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <p class="form__error">Soru adı zorunludur ve en fazla 150 karakter olabilir.</p>
+      }
+
+      @if (nameTaken()) {
+        <p class="form__error">Bu etkinlikte aynı adda bir soru zaten var.</p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="item-max">Tam puan</label>
+      <input
+        id="item-max"
+        pInputText
+        type="number"
+        formControlName="maxPoint"
+        min="0.01"
+        max="1000"
+        step="0.5"
+      />
+      <p class="form__help">
+        Çıktı hesabının <strong>paydası</strong> budur: öğrencinin bir çıktıdan aldığı
+        başarı, o çıktıya bağlı soruların alınan puanları / tam puanları oranından çıkar.
+      </p>
+
+      @if (form.controls.maxPoint.touched && form.controls.maxPoint.invalid) {
+        <p class="form__error">
+          Tam puan sıfırdan büyük olmalıdır; sıfır tam puan çıktı hesabını engeller.
+        </p>
+      }
+    </div>
+
+    <div class="form__field">
+      <label class="form__label" for="item-seq">Sıra</label>
+      <input
+        id="item-seq"
+        pInputText
+        type="number"
+        formControlName="sequenceNo"
+        min="0"
+        step="1"
+      />
+      <p class="form__help">Yalnızca listeleme sırası; hesabı etkilemez.</p>
+    </div>
+
+    <footer class="form__footer">
+      <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="close()">
+        Vazgeç
+      </button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving() || nameTaken()">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        {{ isEdit() ? 'Kaydet' : 'Ekle' }}
+      </button>
+    </footer>
+  </form>
+</p-dialog>
