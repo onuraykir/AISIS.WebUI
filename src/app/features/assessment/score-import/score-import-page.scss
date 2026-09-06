@@ -1,0 +1,486 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px 40px;
+}
+
+.page__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page__title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.page__lead {
+  margin: 0;
+  max-width: 78ch;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--p-text-muted-color);
+}
+
+.page__message {
+  display: block;
+}
+
+.muted {
+  color: var(--p-text-muted-color);
+  font-size: 11.5px;
+}
+
+/* ── Dönem → açılış seçici ── */
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+.picker__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 200px;
+}
+
+.picker__field--wide {
+  flex: 1 1 320px;
+}
+
+.picker__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 22px 24px;
+  border: 1px dashed var(--p-content-border-color);
+  border-radius: 10px;
+  color: var(--p-text-muted-color);
+  font-size: 12.5px;
+}
+
+/* ── Adım şeridi ──
+   Numaralar gerçek bir sıra anlatıyor: önce kim, sonra ne, en son kaç puan. */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 180px;
+  padding: 9px 14px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  background: var(--p-content-background);
+  font-size: 12.5px;
+  color: var(--p-text-muted-color);
+}
+
+.steps__item--active {
+  border-color: var(--p-primary-color);
+  color: var(--p-text-color);
+  font-weight: 600;
+}
+
+.steps__item--done {
+  color: var(--p-text-color);
+}
+
+.steps__no {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--p-content-hover-background);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.steps__item--active .steps__no {
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+}
+
+.steps__item--done .steps__no {
+  background: color-mix(in srgb, #15803d 18%, transparent);
+  color: #15803d;
+}
+
+/* ── Dosya seçimi ── */
+.upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 24px;
+  border: 1px dashed var(--p-content-border-color);
+  border-radius: 12px;
+  background: var(--p-content-background);
+  text-align: center;
+}
+
+.upload__icon {
+  font-size: 30px;
+  color: var(--p-text-muted-color);
+  opacity: 0.6;
+}
+
+.upload__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.upload__note {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--p-text-muted-color);
+}
+
+.upload__button {
+  margin-top: 6px;
+  cursor: pointer;
+}
+
+.upload__busy {
+  margin: 0;
+  font-size: 12px;
+  color: var(--p-text-muted-color);
+}
+
+/* ── Aşama gövdesi ── */
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stage__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stage__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.stage__lead {
+  margin: 0;
+  max-width: 76ch;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--p-text-muted-color);
+}
+
+.stage__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+/* ── Sayı kartları ── */
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+  padding: 10px 14px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  background: var(--p-content-background);
+}
+
+.card--warn {
+  border-color: color-mix(in srgb, #b45309 45%, transparent);
+}
+
+.card__value {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--p-text-color);
+}
+
+.card__label {
+  font-size: 11px;
+  color: var(--p-text-muted-color);
+}
+
+/* ── Paneller ── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 15px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+.panel--warn {
+  border-left: 3px solid #b45309;
+}
+
+.panel--bad {
+  border-left: 3px solid #dc2626;
+}
+
+.panel--ok {
+  border-left: 3px solid #15803d;
+}
+
+.panel__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.panel__note {
+  margin: 0;
+  max-width: 78ch;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--p-text-muted-color);
+}
+
+.panel__list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--p-text-color);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.panel__list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tag {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--p-content-hover-background);
+  color: var(--p-text-muted-color);
+  font-size: 10px;
+}
+
+/* ── Karar satırı (etkinlik ekle / iptal) ── */
+.decision {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  background: var(--p-content-hover-background);
+}
+
+.decision--off {
+  opacity: 0.55;
+}
+
+.decision__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.decision__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 200px;
+}
+
+.decision__check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--p-text-color);
+  cursor: pointer;
+}
+
+/* ── Eksik tam puan doldurma ── */
+.fill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fill__name {
+  flex: 1 1 auto;
+  font-size: 12px;
+}
+
+.fill__input {
+  width: 110px;
+  padding: 5px 8px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 6px;
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+  font-size: 12px;
+  text-align: right;
+}
+
+/* ── Not gridi ── */
+.tbl-wrap {
+  overflow: auto;
+  max-height: 60vh;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  background: var(--p-content-background);
+}
+
+.grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 12px;
+}
+
+.grid th,
+.grid td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--p-content-border-color);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--p-content-hover-background);
+  font-weight: 600;
+}
+
+/* Öğrenci kolonu yatay kaydırmada sabit: 20 soruluk bir sınavda kimin satırında
+   olduğunu görmeden not girilmez. */
+.grid__sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--p-content-background);
+}
+
+.grid thead .grid__sticky {
+  z-index: 3;
+  background: var(--p-content-hover-background);
+}
+
+.grid__item {
+  display: block;
+  font-size: 12px;
+}
+
+.grid__activity {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--p-text-muted-color);
+}
+
+.grid__number {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.grid__name {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--p-text-muted-color);
+}
+
+/* Puanı hiç olmayan öğrenci: satır duruyor ama boş olduğu görünüyor. */
+.grid__row--empty .grid__sticky {
+  border-left: 2px solid #b45309;
+}
+
+.grid__input {
+  width: 62px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--p-text-color);
+  font-size: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid__input:hover:not(:focus) {
+  border-color: var(--p-content-border-color);
+}
+
+.grid__input:focus {
+  border-color: var(--p-primary-color);
+  background: var(--p-content-background);
+  outline: none;
+}
+
+/* Tam puanı aşan hücre; sunucu da reddediyor ama hücrede görünmesi gerekiyor. */
+.grid__input--over,
+.grid__input--over:hover:not(:focus) {
+  border-color: #dc2626;
+  background: color-mix(in srgb, #dc2626 10%, transparent);
+  color: #dc2626;
+  font-weight: 700;
+}

@@ -1,0 +1,327 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <h1 class="page__title">Çıktı Hesabı</h1>
+      <p class="page__lead">
+        Bir ders açılışının çıktı başarılarını hesaplar. Hesap <strong>elle</strong>
+        çalışır ve <strong>bütün notlar girilmeden</strong> koşmaz; ara hesap yoktur.
+      </p>
+    </div>
+  </header>
+
+  <!-- ── Bağlam: dönem → açılış ── -->
+  <div class="picker">
+    <label class="picker__field">
+      <span class="picker__label">Dönem</span>
+      <p-select
+        [options]="semesterOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="store.semesterId()"
+        (ngModelChange)="onSemesterChange($event)"
+        placeholder="Dönem seçin"
+        appendTo="body"
+      />
+    </label>
+
+    <label class="picker__field picker__field--wide">
+      <span class="picker__label">Ders açılışı</span>
+      <p-select
+        [options]="offeringOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="store.offeringId()"
+        (ngModelChange)="onOfferingChange($event)"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Açılış seçin"
+        appendTo="body"
+        [disabled]="store.offerings().length === 0"
+      />
+    </label>
+
+    <div class="picker__actions">
+      <button
+        type="button"
+        class="btn btn--ghost"
+        [disabled]="store.offeringId() === null || store.calculating()"
+        (click)="recalculate()"
+      >
+        @if (store.calculating()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        } @else {
+          <i class="pi pi-calculator" aria-hidden="true"></i>
+        }
+        Hesapla
+      </button>
+
+      <button
+        type="button"
+        class="btn btn--primary"
+        *appHasAction="'UPDATE'; operation: 'CALCULATION'"
+        [disabled]="!!saveBlockedReason() || store.saving()"
+        [pTooltip]="saveBlockedReason() ?? 'Sonuçları kaydet'"
+        tooltipPosition="top"
+        (click)="save()"
+      >
+        @if (store.saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        Kaydet
+      </button>
+    </div>
+  </div>
+
+  @if (store.error(); as error) {
+    <p-message severity="error" [text]="error" styleClass="page__message" />
+  }
+
+  @if (store.feedback(); as feedback) {
+    <p-message [severity]="feedback.severity" [text]="feedback.text" styleClass="page__message" />
+  }
+
+  @if (store.loading()) {
+    <p-skeleton height="8rem" />
+  } @else if (store.offeringId() === null) {
+    <p class="empty">Hesabı görmek için bir ders açılışı seçin.</p>
+  } @else if (store.result(); as result) {
+    <!--
+      ENGELLER VE SONUÇ BİR ARADA GÖRÜNMEZ. Engel varsa hiçbir sayı üretilmemiştir;
+      yarım bir tablo göstermek gerçek olmayan bir başarı tablosu göstermek olurdu.
+    -->
+    @if (result.blocking.length > 0) {
+      <div class="panel panel--blocking">
+        <h2 class="panel__title">
+          <i class="pi pi-ban" aria-hidden="true"></i>
+          Hesap koşmadı — {{ result.blocking.length }} engel
+        </h2>
+        <p class="panel__lead">
+          Engellerin <strong>tamamı</strong> aşağıda; tek tek keşfetmeniz gerekmiyor.
+        </p>
+
+        <ul class="issues">
+          @for (issue of result.blocking; track $index) {
+            <li class="issues__row">
+              @if (issue.identifier) {
+                <span class="issues__tag">{{ issue.identifier }}</span>
+              }
+              <span class="issues__text">{{ issue.message }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    } @else {
+      @if (result.warnings.length > 0) {
+        <div class="panel panel--warning">
+          <h2 class="panel__title">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            {{ result.warnings.length }} uyarı
+            @if (result.zeroCountedScoreCount > 0) {
+              — {{ result.zeroCountedScoreCount }} puan girilmemişti ve <strong>0 sayıldı</strong>
+            }
+          </h2>
+          <p class="panel__lead">
+            Bu liste, "sıfır gerçek bir başarısızlık mı, eksik veri mi" sorusunun tek
+            cevabı. Kaydetmeden önce okunması gerekiyor.
+          </p>
+
+          <ul class="issues">
+            @for (issue of result.warnings; track $index) {
+              <li class="issues__row">
+                @if (issue.identifier) {
+                  <span class="issues__tag">{{ issue.identifier }}</span>
+                }
+                <span class="issues__text">{{ issue.message }}</span>
+              </li>
+            }
+          </ul>
+
+          <label class="ack">
+            <input
+              type="checkbox"
+              [ngModel]="store.warningsAcknowledged()"
+              (ngModelChange)="store.warningsAcknowledged.set($event)"
+            />
+            Uyarıları gözden geçirdim.
+          </label>
+        </div>
+      }
+
+      <div class="panel">
+        <h2 class="panel__title">
+          Ders çıktıları — {{ result.studentCount }} öğrenci
+          @if (!result.isCommitted) {
+            <span class="badge badge--draft">kaydedilmedi</span>
+          } @else {
+            <span class="badge badge--saved">kaydedildi</span>
+          }
+        </h2>
+
+        <div class="tablewrap">
+          <table class="grid">
+            <thead>
+              <tr>
+                <th class="grid__student">Öğrenci</th>
+                @for (code of store.outcomeCodes(); track code) {
+                  <th class="grid__num">{{ code }}</th>
+                }
+                <th class="grid__num">Ortalama</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of store.studentRows(); track row.studentId) {
+                <tr>
+                  <td class="grid__student">
+                    <span class="grid__no">{{ row.studentNumber }}</span>
+                    <span class="grid__name">{{ row.fullName }}</span>
+                  </td>
+                  @for (level of row.levels; track $index) {
+                    <td class="grid__num">
+                      <span [class]="levelClass(level)">{{ level.toFixed(2) }}</span>
+                    </td>
+                  }
+                  <td class="grid__num grid__avg">{{ row.average.toFixed(2) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!--
+        KAPANIŞ. Hesaptan ayrı bir adım ve DAHA SIKI bir kapı: eksik puan hesapta
+        uyarıydı, burada engeldir — dondurulan sayının arkasında eksik veri kalamaz.
+      -->
+      @if (store.closure(); as closure) {
+        <div class="panel" [class.panel--sealed]="closure.isClosed">
+          <h2 class="panel__title">
+            <i class="pi" [class.pi-lock]="closure.isClosed" [class.pi-lock-open]="!closure.isClosed" aria-hidden="true"></i>
+            Ders kapanışı
+            @if (closure.isClosed) {
+              <span class="badge badge--saved">mühürlü</span>
+            }
+          </h2>
+
+          @if (closure.isClosed) {
+            <p class="panel__lead">
+              Sonuçlar donduruldu. Değerlendirme yapısı da sonuçlar da değiştirilemez.
+            </p>
+
+            <div class="reopen" *appHasAction="'REOPEN'; operation: 'COURSE_CLOSURE'">
+              <label class="reopen__label" for="reopen-reason">
+                Yeniden açma gerekçesi
+                <span class="reopen__hint">zorunlu — sessizce açılamaz</span>
+              </label>
+              <div class="reopen__row">
+                <input
+                  id="reopen-reason"
+                  type="text"
+                  class="reopen__input"
+                  [ngModel]="reopenReason()"
+                  (ngModelChange)="reopenReason.set($event)"
+                  placeholder="Örn. MT2'nin 3. sorusunun tam puanı yanlış girilmişti"
+                />
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  [disabled]="reopenReason().trim().length === 0 || store.closing()"
+                  (click)="submitReopen()"
+                >
+                  Yeniden aç
+                </button>
+              </div>
+            </div>
+          } @else {
+            <p class="panel__lead">
+              Kapanış <strong>K1</strong> (bütün notlar girilmiş) ve <strong>K2</strong>
+              (her çıktının kapsamı %100) şartlarını arar.
+            </p>
+
+            @if (closure.blocking.length > 0) {
+              <ul class="issues">
+                @for (issue of closure.blocking; track $index) {
+                  <li class="issues__row">
+                    @if (issue.identifier) {
+                      <span class="issues__tag">{{ issue.identifier }}</span>
+                    }
+                    <span class="issues__text">{{ issue.message }}</span>
+                  </li>
+                }
+              </ul>
+            }
+
+            <div class="coverage">
+              @for (row of closure.coverage; track row.courseOutcomeId) {
+                <span
+                  class="coverage__chip"
+                  [class.coverage__chip--full]="row.coveragePercent === 100"
+                >
+                  {{ row.outcomeCode }} · %{{ row.coveragePercent }}
+                </span>
+              }
+            </div>
+
+            <div class="panel__actions">
+              <button
+                type="button"
+                class="btn btn--primary"
+                *appHasAction="'CLOSE'; operation: 'COURSE_CLOSURE'"
+                [disabled]="!!closeBlockedReason() || store.closing()"
+                [pTooltip]="closeBlockedReason() ?? 'Sonuçları dondur'"
+                tooltipPosition="top"
+                (click)="confirmClose()"
+              >
+                @if (store.closing()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-lock" aria-hidden="true"></i>
+                }
+                Kapat ve dondur
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      @if (store.programRows().length > 0) {
+        <div class="panel">
+          <h2 class="panel__title">Program çıktıları</h2>
+          <p class="panel__lead">
+            Ders ortalaması eşikle karşılaştırılır. <strong>U</strong> = dersi bırakan
+            veya kalan öğrenci — ölçüm yazılır, yargı verilmez.
+          </p>
+
+          <div class="tablewrap">
+            <table class="grid">
+              <thead>
+                <tr>
+                  <th class="grid__student">Öğrenci</th>
+                  <th>Program çıktısı</th>
+                  <th class="grid__num">Ortalama</th>
+                  <th class="grid__num">Sonuç</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of store.programRows(); track $index) {
+                  <tr>
+                    <td class="grid__student">
+                      <span class="grid__no">{{ row.studentNumber }}</span>
+                      <span class="grid__name">{{ row.fullName }}</span>
+                    </td>
+                    <td>{{ row.outcomeCode }}</td>
+                    <td class="grid__num">{{ row.achievementLevel.toFixed(2) }}</td>
+                    <td class="grid__num">
+                      <span class="verdict verdict--{{ row.achievement }}">{{ row.achievement }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    }
+  }
+</section>
+
+<p-confirmdialog />

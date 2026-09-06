@@ -30,7 +30,14 @@ export type ActionCode =
   | 'TRANSFER'
   /** Kaydı sonlandırmadan askıya alır / geri açar. */
   | 'SUSPEND'
-  | 'RESUME';
+  | 'RESUME'
+  /**
+   * Akreditasyon kapanışı. Generic `APPROVE` ile ifade edilmedi: rol matrisinde
+   * "Çıktı Hesabı > Onayla" diye okunur ve neyin mühürlendiği görünmezdi.
+   * `CLOSE` sonuçları dondurur; geri alması ayrı bir yetkidir.
+   */
+  | 'CLOSE'
+  | 'REOPEN';
 
 /**
  * Sayfadaki bir iş fonksiyonu ve kullanıcının o fonksiyondaki eylemleri.

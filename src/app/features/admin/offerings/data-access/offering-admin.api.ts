@@ -9,6 +9,8 @@ import {
   CourseInstructorRoleValue,
   InstructorCandidate,
   OfferingActivityCreateCommand,
+  OfferingActivityItemCreateCommand,
+  OfferingActivityItemUpdateCommand,
   OfferingActivityUpdateCommand,
   OfferingDetail,
   OfferingListItem,
@@ -126,5 +128,26 @@ export class OfferingAdminApi {
 
   removeActivity(activityId: number): Observable<string> {
     return this.api.deleteCommand(`${this.base}/activities/${activityId}`);
+  }
+
+  // ── Sorular ──
+  // Etkinliğin bir alt seviyesi; aynı uç ailesi, aynı kapı. Tam puan buradan girilir.
+
+  addActivityItem(
+    activityId: number,
+    command: OfferingActivityItemCreateCommand,
+  ): Observable<CreatedId> {
+    return this.api.post<CreatedId>(`${this.base}/activities/${activityId}/items`, command);
+  }
+
+  updateActivityItem(
+    itemId: number,
+    command: OfferingActivityItemUpdateCommand,
+  ): Observable<string> {
+    return this.api.putCommand(`${this.base}/items/${itemId}`, command);
+  }
+
+  removeActivityItem(itemId: number): Observable<string> {
+    return this.api.deleteCommand(`${this.base}/items/${itemId}`);
   }
 }

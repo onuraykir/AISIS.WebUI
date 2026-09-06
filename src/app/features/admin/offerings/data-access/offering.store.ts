@@ -16,6 +16,8 @@ import {
   CourseInstructorRoleValue,
   InstructorCandidate,
   OfferingActivityCreateCommand,
+  OfferingActivityItemCreateCommand,
+  OfferingActivityItemUpdateCommand,
   OfferingActivityUpdateCommand,
   OfferingDetail,
   OfferingListItem,
@@ -374,6 +376,44 @@ export class OfferingStore {
   async removeActivity(activityId: number): Promise<boolean> {
     return this.runCommand(() => firstValueFrom(this.api.removeActivity(activityId)));
   }
+
+  // ── Sorular ──
+  //
+  // TAM PUAN NEDEN ÖNEMLİ: çıktı hesabının paydası, bir çıktıya bağlı soruların tam
+  // puanları toplamıdır. Excel'den doğan sorular sıfır tam puanla geliyor ve o hâl
+  // hesabı engelliyor; bu üçlü, paydayı düzeltmenin tek yolu.
+
+  async addActivityItem(
+    activityId: number,
+    command: OfferingActivityItemCreateCommand,
+  ): Promise<boolean> {
+    return this.runCommand(async () => {
+      await firstValueFrom(this.api.addActivityItem(activityId, command));
+      return `${command.name} sorusu eklendi.`;
+    });
+  }
+
+  async updateActivityItem(
+    itemId: number,
+    command: OfferingActivityItemUpdateCommand,
+  ): Promise<boolean> {
+    return this.runCommand(() => firstValueFrom(this.api.updateActivityItem(itemId, command)));
+  }
+
+  async removeActivityItem(itemId: number): Promise<boolean> {
+    return this.runCommand(() => firstValueFrom(this.api.removeActivityItem(itemId)));
+  }
+
+  /**
+   * Tam puanı girilmemiş soru sayısı. Sıfırdan büyükse çıktı hesabı KOŞMAZ:
+   * o soruların bağlı olduğu çıktının paydası sıfıra düşer.
+   */
+  readonly itemsMissingMaxPoint = computed(
+    () =>
+      this._detail()
+        ?.activities.flatMap((activity) => activity.items)
+        .filter((item) => item.maxPoint <= 0).length ?? 0,
+  );
 
   // ── Ortak kabuklar ──
 

@@ -218,6 +218,50 @@
           </section>
         }
 
+        <!--
+          DÖNEM KAPANIŞI. Düzenleme formundan yapılamaz ve bu bilinçli: ön koşulu
+          bütün açılışların kapanmış olması (K3), yan etkisi genel program çıktısı
+          sonuçlarının yeniden hesaplanması. Sıradan bir alan güncellemesi değil.
+        -->
+        @if (!isClosed()) {
+          <section class="detail__section">
+            <h4 class="detail__section-title">Dönem kapanışı</h4>
+
+            @if (closure(); as report) {
+              @if (report.canClose) {
+                <p class="detail__note">
+                  <i class="pi pi-check-circle" aria-hidden="true"></i>
+                  {{ report.offeringCount }} açılışın hepsi kapalı; dönem kapatılabilir.
+                </p>
+              } @else {
+                <p class="detail__note detail__note--warn">
+                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                  {{ report.openOfferings.length }} açılış hâlâ açık:
+                  <strong>{{ report.openOfferings.join(', ') }}</strong>
+                </p>
+              }
+            }
+
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              *appHasAction="'CLOSE'; operation: 'SEMESTER_CLOSURE'"
+              [disabled]="store.saving() || !!closeBlockedReason()"
+              [pTooltip]="closeBlockedReason() ?? 'Dönemi kapat ve genel PÇ sonuçlarını hesapla'"
+              tooltipPosition="top"
+              (click)="confirmClose()"
+            >
+              <i class="pi pi-lock" aria-hidden="true"></i> Dönemi Kapat
+            </button>
+
+            <p class="detail__note">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              Kapanış, öğrencilerin <strong>dersler ötesi</strong> program çıktısı
+              sonuçlarını yeniden hesaplar. Bu sonuç donmaz — mezuniyete kadar canlı kalır.
+            </p>
+          </section>
+        }
+
         <footer class="detail__actions">
           <button
             type="button"

@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiFailure } from '@core/api/api-result.model';
 import { SemesterAdminApi } from './semester-admin.api';
 import {
+  SemesterClosure,
   SemesterCreateCommand,
   SemesterDetail,
   SemesterListItem,
@@ -128,6 +129,31 @@ export class SemesterStore {
 
   async setCurrent(id: number): Promise<boolean> {
     return this.runCommand(() => firstValueFrom(this.api.setCurrent(id)));
+  }
+
+  /**
+   * Dönemi kapatır. Ön koşulu K3: o dönemin BÜTÜN ders açılışları kapanmış olmalı.
+   * Yan etkisi genel program çıktısı sonuçlarının yeniden hesaplanması — bu yüzden
+   * düzenleme formundan değil, ayrı bir eylemden yapılıyor.
+   */
+  async close(id: number): Promise<boolean> {
+    return this.runCommand(async () => {
+      const closure = await firstValueFrom(this.api.close(id));
+      return (
+        `${closure.semesterName} kapatıldı; ` +
+        `${closure.studentProgramOutcomeResultCount} genel program çıktısı sonucu güncellendi.`
+      );
+    });
+  }
+
+  /** K3 denetimi; kapatmaz. Hangi açılışların açık kaldığını döner. */
+  async closurePreview(id: number): Promise<SemesterClosure | null> {
+    try {
+      return await firstValueFrom(this.api.closurePreview(id));
+    } catch (error) {
+      this._feedback.set({ severity: 'error', text: toMessage(error) });
+      return null;
+    }
   }
 
   async remove(id: number): Promise<boolean> {

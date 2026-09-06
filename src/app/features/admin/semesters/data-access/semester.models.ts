@@ -39,6 +39,32 @@ export const SEMESTER_STATUS_OPTIONS: readonly { value: number; label: string }[
 ].map((value) => ({ value, label: SEMESTER_STATUS_LABELS[value] ?? '—' }));
 
 /** Listedeki bir dönem. Sıralama başlangıç tarihine göre, yeniden eskiye. */
+/**
+ * DÖNEM KAPANIŞI RAPORU.
+ *
+ * Ders kapanışından farkı: burada yeni bir **ölçüm** yapılmaz. Ders sonuçları zaten
+ * donmuştur; dönem kapanışı onları toplar ve öğrencinin dersler ötesi program çıktısı
+ * sonucunu üretir.
+ */
+export interface SemesterClosure {
+  readonly semesterId: number;
+  readonly semesterName: string;
+
+  readonly isClosed: boolean;
+
+  /** K3 sağlandı mı? */
+  readonly canClose: boolean;
+
+  /** Hâlâ açık ders açılışları — adlarıyla, çünkü kullanıcı hangisi olduğunu bilmeli. */
+  readonly openOfferings: readonly string[];
+
+  readonly offeringCount: number;
+  readonly closedOfferingCount: number;
+
+  readonly affectedStudentCount: number;
+  readonly studentProgramOutcomeResultCount: number;
+}
+
 export interface SemesterListItem {
   readonly id: number;
   readonly code: string;

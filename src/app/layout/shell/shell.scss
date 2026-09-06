@@ -44,10 +44,16 @@
   overflow-x: hidden;
 }
 
+/*
+  GENISLIK SINIRI YOK. Onceden 1600px'te duruyordu; 2560px'lik bir ekranda iki yanda
+  neredeyse ekranin ucte biri kadar bosluk kaliyor ve cikti hesabi, not gridi, PC
+  matrisi gibi GENIS TABLOLAR gereksiz yere sikisiyordu.
+
+  Uzun satir riski yok: sayfalarin duz metinleri zaten kendi `max-width: NNch`
+  sinirlarini tasiyor; burada serbest kalan yalnizca tablolar ve paneller.
+*/
 .shell__container {
-  max-width: 1600px;
   padding: 20px 24px 32px;
-  margin-inline: auto;
 }
 
 /* --- Mobil: menü içeriği itmek yerine üstüne kayar --- */

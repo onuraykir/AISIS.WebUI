@@ -1,0 +1,181 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <h1 class="page__title">PÇ – Ders Eşleştirme</h1>
+      <p class="page__lead">
+        Hangi dersin hangi program çıktısına katkı verdiği. <strong>Zincirin ilk
+        halkası:</strong> bu bağ kurulmadan dersin çıktı sonuçları hiçbir program
+        çıktısına yazılmaz. Bağ ders tanımına aittir — dönemden döneme değişmez,
+        program açılırken kurulur.
+      </p>
+    </div>
+
+    <div class="page__actions">
+      @if (store.dirtyCount() > 0) {
+        <button type="button" class="btn btn--ghost" [disabled]="store.saving()" (click)="discard()">
+          Vazgeç
+        </button>
+      }
+
+      <button
+        type="button"
+        class="btn btn--primary"
+        *appHasAction="'ASSIGN'; operation: 'COURSE_PROGRAM_OUTCOME'"
+        [disabled]="!!saveBlockedReason() || store.saving()"
+        [pTooltip]="saveBlockedReason() ?? 'Değişen satırları kaydet'"
+        tooltipPosition="top"
+        (click)="save()"
+      >
+        @if (store.saving()) {
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        }
+        Kaydet
+        @if (store.dirtyCount() > 0) {
+          <span class="badge">{{ store.dirtyCount() }}</span>
+        }
+      </button>
+    </div>
+  </header>
+
+  <div class="filters">
+    <label class="filters__field">
+      <span class="filters__label">Bölüm</span>
+      <p-select
+        [options]="departmentOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="store.departmentId()"
+        (ngModelChange)="onDepartmentChange($event)"
+        placeholder="Tüm bölümler"
+        appendTo="body"
+      />
+    </label>
+
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">Ders ara</span>
+      <input
+        type="search"
+        class="filters__input"
+        [ngModel]="store.search()"
+        (ngModelChange)="onSearchChange($event)"
+        (keyup.enter)="applySearch()"
+        (search)="applySearch()"
+        placeholder="Kod veya ad… (Enter)"
+      />
+    </label>
+
+    <span class="filters__note">
+      Süzgeç yalnızca satırları daraltır; "kaç ders bağlı" sayıları tüm dersler üzerinden.
+    </span>
+  </div>
+
+  @if (store.feedback(); as feedback) {
+    <p-message [severity]="feedback.severity" [text]="feedback.text" styleClass="page__message" />
+  }
+
+  <!--
+    EKRANIN ASIL UYARISI. Hiç dersi olmayan bir çıktı için hiçbir öğrenciye sonuç
+    yazılmaz — bu bugüne kadar sessizdi ve hesap da şikâyet etmiyordu.
+  -->
+  @if (store.orphanOutcomes().length > 0) {
+    <div class="panel panel--bad">
+      <h3 class="panel__title">Hiç katkı dersi olmayan çıktılar</h3>
+      <p class="panel__note">
+        Bu çıktılar için <strong>hiçbir öğrenciye sonuç yazılmaz.</strong> Mezuniyet
+        karnesinde satırları hiç oluşmaz — başarısız değil, <em>ölçülmemiş</em> görünürler.
+      </p>
+      <p class="panel__list">
+        @for (outcome of store.orphanOutcomes(); track outcome.id) {
+          <code>{{ outcome.code }}</code>
+        }
+      </p>
+    </div>
+  }
+
+  @if (store.thresholdlessOutcomes().length > 0) {
+    <div class="panel panel--warn">
+      <h3 class="panel__title">Yürürlükte eşiği olmayan çıktılar</h3>
+      <p class="panel__note">
+        Eşiksiz çıktı için başarılı/başarısız kararı verilemez ve çıktı hesabı
+        <strong>durur</strong>. Eşik Değerler ekranından tanımlayıp yürürlüğe alın.
+      </p>
+      <p class="panel__list">
+        @for (outcome of store.thresholdlessOutcomes(); track outcome.id) {
+          <code>{{ outcome.code }}</code>
+        }
+      </p>
+    </div>
+  }
+
+  @if (store.loading()) {
+    <p-skeleton height="18rem" />
+  } @else if (store.outcomes().length === 0) {
+    <p class="hint">
+      <i class="pi pi-info-circle" aria-hidden="true"></i>
+      Henüz program çıktısı tanımlanmamış. Önce <strong>Program Çıktıları</strong>
+      ekranından çıktıları tanımlayın.
+    </p>
+  } @else {
+    <div class="tbl-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th class="matrix__sticky">Ders</th>
+            @for (outcome of store.outcomes(); track outcome.id) {
+              <th
+                class="matrix__col"
+                [class.matrix__col--orphan]="isOrphan(outcome)"
+                [pTooltip]="outcomeHint(outcome)"
+                tooltipPosition="bottom"
+              >
+                <span class="matrix__code">{{ outcome.code }}</span>
+                <span class="matrix__meta">{{ store.linkedCountOf(outcome) }} ders</span>
+              </th>
+            }
+            <th class="matrix__total">Toplam</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (course of store.courses(); track course.courseId) {
+            <tr [class.matrix__row--dirty]="store.isDirty(course.courseId)">
+              <th class="matrix__sticky">
+                <span class="matrix__course">{{ course.courseCode }}</span>
+                <span class="matrix__name">{{ course.name }}</span>
+              </th>
+
+              @for (outcome of store.outcomes(); track outcome.id) {
+                <td class="matrix__cell">
+                  <label class="cell">
+                    <input
+                      type="checkbox"
+                      [checked]="store.isChecked(course.courseId, outcome.id)"
+                      [disabled]="store.saving()"
+                      (change)="toggle(course.courseId, outcome.id)"
+                      [attr.aria-label]="course.courseCode + ' – ' + outcome.code"
+                    />
+                  </label>
+                </td>
+              }
+
+              <td class="matrix__total">{{ store.countOf(course.courseId) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="store.outcomes().length + 2" class="matrix__empty">
+                Bu süzgeçle eşleşen ders yok.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      <strong>Katsayı yoktur.</strong> Katkının büyüklüğü ders çıktılarından hesaplanıp
+      eşikle karşılaştırılır ve <code>1</code> / <code>0</code>'a düşer; buradaki işaret
+      yalnızca "bu ders o hesaba girer mi" sorusunu cevaplar. Bir öğrencinin mezuniyet
+      başarısı, o çıktıya katkı veren derslerin <strong>yarısından bir fazlasında</strong>
+      <code>1</code> almasıyla oluşur.
+    </p>
+  }
+</section>
